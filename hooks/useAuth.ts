@@ -21,13 +21,15 @@ export function useAuth() {
   const supabase = getSupabaseClient()
 
   useEffect(() => {
+    let mounted = true
+    
     // Get initial session
     const getInitialSession = async () => {
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         
         if (sessionError) {
-          setAuthState({ user: null, profile: null, loading: false })
+          if (mounted) setAuthState({ user: null, profile: null, loading: false })
           return
         }
         
@@ -44,7 +46,7 @@ export function useAuth() {
               
               // If profiles table doesn't exist or RLS blocks access, just use user without profile
               if (profileError.code === '42P01' || profileError.code === '42501' || profileError.code === 'PGRST301') {
-                setAuthState({
+                if (mounted) setAuthState({
                   user: session.user,
                   profile: null,
                   loading: false,
@@ -70,20 +72,20 @@ export function useAuth() {
                     .single()
 
                   if (createError) {
-                    setAuthState({
+                    if (mounted) setAuthState({
                       user: session.user,
                       profile: null,
                       loading: false,
                     })
                   } else {
-                    setAuthState({
+                    if (mounted) setAuthState({
                       user: session.user,
                       profile: newProfile,
                       loading: false,
                     })
                   }
                 } catch (err) {
-                  setAuthState({
+                  if (mounted) setAuthState({
                     user: session.user,
                     profile: null,
                     loading: false,
@@ -91,35 +93,35 @@ export function useAuth() {
                 }
               } else {
                 // Other profile errors - just continue without profile
-                setAuthState({
+                if (mounted) setAuthState({
                   user: session.user,
                   profile: null,
                   loading: false,
                 })
               }
             } else {
-              setAuthState({
+              if (mounted) setAuthState({
                 user: session.user,
                 profile,
                 loading: false,
               })
             }
           } catch (err) {
-            setAuthState({
+            if (mounted) setAuthState({
               user: session.user,
               profile: null,
               loading: false,
             })
           }
         } else {
-          setAuthState({
+          if (mounted) setAuthState({
             user: null,
             profile: null,
             loading: false,
           })
         }
       } catch (err) {
-        setAuthState({
+        if (mounted) setAuthState({
           user: null,
           profile: null,
           loading: false,
@@ -143,7 +145,7 @@ export function useAuth() {
                 .single()
 
               if (profileError && profileError.code !== 'PGRST116') {
-                setAuthState({
+                if (mounted) setAuthState({
                   user: session.user,
                   profile: null,
                   loading: false,
@@ -168,41 +170,41 @@ export function useAuth() {
                     .select()
                     .single()
 
-                  setAuthState({
+                  if (mounted) setAuthState({
                     user: session.user,
                     profile: newProfile,
                     loading: false,
                   })
                 } catch (err) {
-                  setAuthState({
+                  if (mounted) setAuthState({
                     user: session.user,
                     profile: null,
                     loading: false,
                   })
                 }
               } else {
-                setAuthState({
+                if (mounted) setAuthState({
                   user: session.user,
                   profile,
                   loading: false,
                 })
               }
             } catch (err) {
-              setAuthState({
+              if (mounted) setAuthState({
                 user: session.user,
                 profile: null,
                 loading: false,
               })
             }
           } else {
-            setAuthState({
+            if (mounted) setAuthState({
               user: null,
               profile: null,
               loading: false,
             })
           }
         } catch (err) {
-          setAuthState({
+          if (mounted) setAuthState({
             user: null,
             profile: null,
             loading: false,
@@ -211,7 +213,10 @@ export function useAuth() {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signOut = async () => {

@@ -1,0 +1,295 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { z } from 'zod'
+
+const CreateParkingSpotSchema = z.object({
+  spot_number: z.string().min(1, 'Spot number is required'),
+  location: z.string().min(1, 'Location is required'),
+  notes: z.string().optional(),
+})
+
+const UpdateParkingSpotSchema = z.object({
+  spot_number: z.string().min(1, 'Spot number is required').optional(),
+  location: z.string().min(1, 'Location is required').optional(),
+  notes: z.string().optional(),
+})
+
+async function getAuthenticatedUser(request: NextRequest) {
+  const supabase = getSupabaseClient()
+  
+  // Get the authorization header
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { user: null, error: 'No authorization token provided' }
+  }
+
+  const token = authHeader.substring(7)
+  
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    
+    if (error || !user) {
+      return { user: null, error: 'Invalid or expired token' }
+    }
+    
+    return { user, error: null }
+  } catch {
+    return { user: null, error: 'Failed to authenticate user' }
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { user, error: authError } = await getAuthenticatedUser(request)
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const supabase = getSupabaseClient()
+    const { searchParams } = new URL(request.url)
+    const ownerId = searchParams.get('owner_id')
+
+    let query = supabase
+      .from('parking_spots')
+      .select('*')
+      .order('spot_number', { ascending: true })
+
+    // If owner_id is provided, filter by owner
+    if (ownerId) {
+      query = query.eq('owner_id', ownerId)
+    }
+
+    const { data: spots, error } = await query
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to fetch parking spots' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ spots })
+  } catch {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { user, error: authError } = await getAuthenticatedUser(request)
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const validationResult = CreateParkingSpotSchema.safeParse(body)
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: validationResult.error.format()
+        },
+        { status: 400 }
+      )
+    }
+
+    const { spot_number, location, notes } = validationResult.data
+    const supabase = getSupabaseClient()
+
+    // Check if spot number already exists for this user
+    const { data: existingSpot } = await supabase
+      .from('parking_spots')
+      .select('id')
+      .eq('owner_id', user.id)
+      .eq('spot_number', spot_number)
+      .single()
+
+    if (existingSpot) {
+      return NextResponse.json(
+        { error: 'A parking spot with this number already exists' },
+        { status: 409 }
+      )
+    }
+
+    const { data: newSpot, error } = await supabase
+      .from('parking_spots')
+      .insert({
+        owner_id: user.id,
+        spot_number,
+        location,
+        notes: notes || null,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to create parking spot' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ spot: newSpot }, { status: 201 })
+  } catch {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const { user, error: authError } = await getAuthenticatedUser(request)
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { id, ...updateData } = body
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Spot ID is required' },
+        { status: 400 }
+      )
+    }
+
+    const validationResult = UpdateParkingSpotSchema.safeParse(updateData)
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: validationResult.error.format()
+        },
+        { status: 400 }
+      )
+    }
+
+    const supabase = getSupabaseClient()
+
+    // Check if spot exists and user owns it
+    const { data: existingSpot } = await supabase
+      .from('parking_spots')
+      .select('*')
+      .eq('id', id)
+      .eq('owner_id', user.id)
+      .single()
+
+    if (!existingSpot) {
+      return NextResponse.json(
+        { error: 'Parking spot not found or you do not have permission to update it' },
+        { status: 404 }
+      )
+    }
+
+    const { data: updatedSpot, error } = await supabase
+      .from('parking_spots')
+      .update({
+        ...validationResult.data,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .eq('owner_id', user.id)
+      .select()
+      .single()
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to update parking spot' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ spot: updatedSpot })
+  } catch {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { user, error: authError } = await getAuthenticatedUser(request)
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Spot ID is required' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = getSupabaseClient()
+
+    // Check if spot exists and user owns it
+    const { data: existingSpot } = await supabase
+      .from('parking_spots')
+      .select('*')
+      .eq('id', id)
+      .eq('owner_id', user.id)
+      .single()
+
+    if (!existingSpot) {
+      return NextResponse.json(
+        { error: 'Parking spot not found or you do not have permission to delete it' },
+        { status: 404 }
+      )
+    }
+
+    // Delete associated availabilities first
+    await supabase
+      .from('availabilities')
+      .delete()
+      .eq('spot_id', id)
+
+    // Delete the parking spot
+    const { error } = await supabase
+      .from('parking_spots')
+      .delete()
+      .eq('id', id)
+      .eq('owner_id', user.id)
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to delete parking spot' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ message: 'Parking spot deleted successfully' })
+  } catch {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
