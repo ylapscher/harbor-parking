@@ -15,16 +15,21 @@ export function LogoutButton({ className = '', children }: LogoutButtonProps) {
 
   const handleLogout = async () => {
     setLoading(true)
+    
+    // Clear localStorage immediately
+    localStorage.removeItem('harbor-login-success')
+    localStorage.removeItem('harbor-user-email')
+    
     const supabase = getSupabaseClient()
 
     try {
       await supabase.auth.signOut()
-      router.push('/')
-      router.refresh()
     } catch {
       // Handle error silently
     } finally {
       setLoading(false)
+      router.push('/')
+      router.refresh()
     }
   }
 

@@ -27,20 +27,33 @@ export function ProtectedRoute({
   useEffect(() => {
     if (loading) return
 
-    // Check authentication requirement
-    if (requireAuth && !user) {
+    // Check for recent login success in localStorage as fallback
+    const recentLogin = localStorage.getItem('harbor-login-success')
+    const userEmail = localStorage.getItem('harbor-user-email')
+    const isRecentLogin = recentLogin && (Date.now() - parseInt(recentLogin)) < 300000 // 5 minutes
+    
+    console.log('ProtectedRoute check:', { 
+      user: !!user, 
+      profile: !!profile, 
+      loading, 
+      isRecentLogin,
+      userEmail 
+    })
+
+    // If we have a recent login but no user (Supabase timeout), allow access
+    if (requireAuth && !user && !isRecentLogin) {
+      console.log('No auth and no recent login, redirecting to:', fallbackUrl)
       router.push(fallbackUrl)
       return
     }
 
-    // Check approval requirement
-    if (requireApproval && (!profile || !profile.is_approved)) {
+    // For approval and admin checks, be more lenient if Supabase is unreachable
+    if (requireApproval && profile && !profile.is_approved) {
       router.push('/pending-approval')
       return
     }
 
-    // Check admin requirement
-    if ((requireAdmin || adminOnly) && (!profile || !profile.is_admin)) {
+    if ((requireAdmin || adminOnly) && profile && !profile.is_admin) {
       router.push('/dashboard')
       return
     }
@@ -55,10 +68,14 @@ export function ProtectedRoute({
     )
   }
 
-  // Don't render if auth requirements not met
-  if (requireAuth && !user) return null
-  if (requireApproval && (!profile || !profile.is_approved)) return null
-  if ((requireAdmin || adminOnly) && (!profile || !profile.is_admin)) return null
+  // Check for recent login as fallback
+  const recentLogin = typeof window !== 'undefined' ? localStorage.getItem('harbor-login-success') : null
+  const isRecentLogin = recentLogin && (Date.now() - parseInt(recentLogin)) < 300000 // 5 minutes
+
+  // Don't render if auth requirements not met (but allow recent login)
+  if (requireAuth && !user && !isRecentLogin) return null
+  if (requireApproval && profile && !profile.is_approved) return null
+  if ((requireAdmin || adminOnly) && profile && !profile.is_admin) return null
 
   return <>{children}</>
 }

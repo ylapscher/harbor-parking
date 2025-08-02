@@ -18,34 +18,98 @@ export function useAuth() {
     loading: true,
   })
 
-  const supabase = getSupabaseClient()
+  let supabase: ReturnType<typeof getSupabaseClient>
+  try {
+    supabase = getSupabaseClient()
+  } catch (error) {
+    console.error('Failed to create Supabase client:', error)
+    // Return a non-loading state immediately if client creation fails
+    return {
+      user: null,
+      profile: null,
+      loading: false,
+      signOut: async () => {},
+      refreshProfile: async () => {},
+      isAdmin: false,
+      isApproved: false,
+    }
+  }
 
   useEffect(() => {
     let mounted = true
     
-    // Get initial session
+    console.log('useAuth: Starting initialization')
+    console.log('useAuth: Environment check', {
+      hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    })
+    
+    // Get initial session with timeout
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        // Check environment variables first
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          console.error('Missing Supabase environment variables')
+          if (mounted) setAuthState({ user: null, profile: null, loading: false })
+          return
+        }
+
+        console.log('useAuth: Fetching session...')
+        
+        // Try to get session with a more aggressive timeout
+        let session = null
+        let sessionError = null
+        
+        try {
+          const result = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Session fetch timeout')), 3000)
+            )
+          ])
+          session = (result as any)?.data?.session
+          sessionError = (result as any)?.error
+        } catch (timeoutErr) {
+          console.warn('Session fetch timed out, continuing without session')
+          if (mounted) {
+            setAuthState({ user: null, profile: null, loading: false })
+          }
+          return
+        }
+        
+        console.log('useAuth: Session result', { hasSession: !!session, error: sessionError })
         
         if (sessionError) {
+          console.error('Session error:', sessionError)
           if (mounted) setAuthState({ user: null, profile: null, loading: false })
           return
         }
         
         if (session?.user) {
           try {
-            // Fetch user profile
-            const { data: profile, error: profileError } = await supabase
+            // Fetch user profile with timeout
+            const profilePromise = supabase
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
               .single()
+            
+            const profileTimeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+            )
+
+            const profileResult = await Promise.race([
+              profilePromise,
+              profileTimeoutPromise
+            ])
+            const { data: profile, error: profileError } = profileResult as { data: Profile | null, error: { code?: string, message?: string } | null }
 
             if (profileError) {
+              console.error('Profile error:', profileError)
               
               // If profiles table doesn't exist or RLS blocks access, just use user without profile
               if (profileError.code === '42P01' || profileError.code === '42501' || profileError.code === 'PGRST301') {
+                console.log('Profile access blocked, continuing with user only')
                 if (mounted) setAuthState({
                   user: session.user,
                   profile: null,
@@ -114,6 +178,7 @@ export function useAuth() {
             })
           }
         } else {
+          console.log('useAuth: No session found, setting to unauthenticated')
           if (mounted) setAuthState({
             user: null,
             profile: null,
@@ -121,13 +186,29 @@ export function useAuth() {
           })
         }
       } catch (err) {
-        if (mounted) setAuthState({
+        console.error('Auth initialization error:', err)
+        // If it's a timeout or connection error, assume no session and continue
+        if (mounted) {
+          setAuthState({
+            user: null,
+            profile: null,
+            loading: false,
+          })
+        }
+      }
+    }
+
+    // Fallback timeout to ensure loading never gets stuck
+    const fallbackTimeout = setTimeout(() => {
+      if (mounted) {
+        console.warn('Auth loading timeout, forcing non-loading state - user should be able to use the app')
+        setAuthState({
           user: null,
           profile: null,
           loading: false,
         })
       }
-    }
+    }, 4000)
 
     getInitialSession()
 
@@ -215,6 +296,7 @@ export function useAuth() {
 
     return () => {
       mounted = false
+      clearTimeout(fallbackTimeout)
       subscription.unsubscribe()
     }
   }, [])

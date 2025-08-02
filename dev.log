@@ -1,0 +1,17 @@
+
+> harbor-parking@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.4.5 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.162:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ○ Compiling middleware ...
+ ✓ Compiled middleware in 556ms
+ ✓ Ready in 2.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 2.5s
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+ GET / 200 in 2826ms

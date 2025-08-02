@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Harbor Parking",
   description: "Resident Parking Spot Sharing Platform",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

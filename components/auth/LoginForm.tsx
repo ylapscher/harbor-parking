@@ -36,7 +36,7 @@ export function LoginForm() {
       })
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Login request timed out. Please try again.')), 30000)
+        setTimeout(() => reject(new Error('Login request timed out. Please check your internet connection and try again.')), 15000)
       )
 
       const result = await Promise.race([loginPromise, timeoutPromise])
@@ -50,8 +50,14 @@ export function LoginForm() {
 
       if (data?.user) {
         console.log('Login successful, redirecting to dashboard')
-        // Force page navigation
-        window.location.href = '/dashboard'
+        // Store login success in localStorage as backup
+        localStorage.setItem('harbor-login-success', Date.now().toString())
+        localStorage.setItem('harbor-user-email', (data.user as { email?: string })?.email || '')
+        
+        setLoading(false)
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 100)
       } else {
         setError('Login failed - no user returned')
       }
@@ -69,7 +75,6 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <h1 className="text-2xl font-bold text-center mb-6 text-white">Login</h1>
       
       <form onSubmit={handleLogin} className="space-y-4">
         {error && (

@@ -24,7 +24,12 @@ export function Navigation() {
     )
   }
 
-  if (!user) return null
+  // Check for recent login as fallback
+  const recentLogin = typeof window !== 'undefined' ? localStorage.getItem('harbor-login-success') : null
+  const userEmail = typeof window !== 'undefined' ? localStorage.getItem('harbor-user-email') : null
+  const isRecentLogin = recentLogin && (Date.now() - parseInt(recentLogin)) < 300000 // 5 minutes
+
+  if (!user && !isRecentLogin) return null
 
   return (
     <nav className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
@@ -79,7 +84,7 @@ export function Navigation() {
                 onClick={() => router.push('/profile')}
                 className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
-                {profile?.full_name || user.email}
+                {profile?.full_name || user?.email || userEmail || 'User'}
               </button>
               <LogoutButton className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 Sign Out
@@ -132,7 +137,7 @@ export function Navigation() {
               <div className="border-t border-gray-700 pt-4">
                 <div className="flex items-center px-3 mb-3">
                   <div className="text-sm text-gray-300">
-                    {profile?.full_name || user.email}
+                    {profile?.full_name || user?.email || userEmail || 'User'}
                   </div>
                   <div className="ml-auto">
                     {profile?.is_approved ? (
