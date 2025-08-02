@@ -1,0 +1,1353 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Harbor Parking API",
+    "description": "REST API for the Harbor Parking spot sharing platform. Enables residents to share parking spots within their building community.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Harbor Parking Support",
+      "email": "support@harbor-parking.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://harbor-parking.vercel.app/api",
+      "description": "Production server"
+    },
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Development server"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User authentication and profile management"
+    },
+    {
+      "name": "Parking Spots",
+      "description": "Parking spot registration and management"
+    },
+    {
+      "name": "Availabilities",
+      "description": "Parking spot availability scheduling"
+    },
+    {
+      "name": "Claims",
+      "description": "Parking spot claim management"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dashboard data and analytics"
+    },
+    {
+      "name": "Admin",
+      "description": "Administrative operations (admin only)"
+    }
+  ],
+  "paths": {
+    "/profile": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Get user profile",
+        "description": "Retrieve the authenticated user's profile information and basic user data",
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "$ref": "#/components/schemas/Profile"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                },
+                "example": {
+                  "profile": {
+                    "id": "123e4567-e89b-12d3-a456-426614174000",
+                    "email": "john.doe@example.com",
+                    "full_name": "John Doe",
+                    "apartment_number": "12A",
+                    "phone_number": "+1234567890",
+                    "is_approved": true,
+                    "is_admin": false,
+                    "created_at": "2024-01-15T10:30:00Z",
+                    "updated_at": "2024-01-15T10:30:00Z"
+                  },
+                  "user": {
+                    "id": "123e4567-e89b-12d3-a456-426614174000",
+                    "email": "john.doe@example.com",
+                    "email_confirmed_at": "2024-01-15T10:30:00Z",
+                    "created_at": "2024-01-15T10:30:00Z",
+                    "updated_at": "2024-01-15T10:30:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Authentication"],
+        "summary": "Update user profile",
+        "description": "Update the authenticated user's profile information",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              },
+              "example": {
+                "full_name": "John Smith",
+                "phone_number": "+1234567890"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "$ref": "#/components/schemas/Profile"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get dashboard data",
+        "description": "Retrieve comprehensive dashboard data including user stats, parking spots, available spots, claims, and related information",
+        "responses": {
+          "200": {
+            "description": "Dashboard data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResponse"
+                },
+                "example": {
+                  "stats": {
+                    "mySpots": 2,
+                    "availableSpots": 5,
+                    "activeClaims": 1,
+                    "totalClaims": 3,
+                    "pendingClaimsOnMySpots": 2,
+                    "confirmedClaimsOnMySpots": 1
+                  },
+                  "mySpots": [],
+                  "availableSpots": [],
+                  "myClaims": [],
+                  "claimsOnMySpots": []
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/parking-spots": {
+      "get": {
+        "tags": ["Parking Spots"],
+        "summary": "Get parking spots",
+        "description": "Retrieve parking spots with optional filtering by owner",
+        "parameters": [
+          {
+            "name": "owner_id",
+            "in": "query",
+            "description": "Filter spots by owner ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Parking spots retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "spots": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ParkingSpot"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Parking Spots"],
+        "summary": "Create parking spot",
+        "description": "Register a new parking spot for the authenticated user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateParkingSpotRequest"
+              },
+              "example": {
+                "spot_number": "A-15",
+                "location": "Level 2 Parking Garage",
+                "notes": "Near elevator"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Parking spot created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "spot": {
+                      "$ref": "#/components/schemas/ParkingSpot"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Parking Spots"],
+        "summary": "Update parking spot",
+        "description": "Update an existing parking spot owned by the authenticated user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateParkingSpotRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Parking spot updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "spot": {
+                      "$ref": "#/components/schemas/ParkingSpot"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Parking Spots"],
+        "summary": "Delete parking spot",
+        "description": "Delete a parking spot and all associated availabilities",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "ID of the parking spot to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Parking spot deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Parking spot deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/availabilities": {
+      "get": {
+        "tags": ["Availabilities"],
+        "summary": "Get availabilities",
+        "description": "Retrieve parking spot availabilities with optional filtering",
+        "parameters": [
+          {
+            "name": "spot_id",
+            "in": "query",
+            "description": "Filter by parking spot ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "description": "Filter by active status",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "available",
+            "in": "query",
+            "description": "Only return active future availabilities",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Availabilities retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "availabilities": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Availability"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Availabilities"],
+        "summary": "Create availability",
+        "description": "Create a new availability period for a parking spot",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAvailabilityRequest"
+              },
+              "example": {
+                "spot_id": "123e4567-e89b-12d3-a456-426614174000",
+                "start_time": "2024-12-25T10:00:00Z",
+                "end_time": "2024-12-25T18:00:00Z",
+                "notes": "Holiday availability",
+                "is_active": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Availability created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "availability": {
+                      "$ref": "#/components/schemas/Availability"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Availabilities"],
+        "summary": "Update availability",
+        "description": "Update an existing availability period",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAvailabilityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Availability updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "availability": {
+                      "$ref": "#/components/schemas/Availability"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Availabilities"],
+        "summary": "Delete availability",
+        "description": "Delete an availability period and all associated claims",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "ID of the availability to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Availability deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Availability deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/claims": {
+      "get": {
+        "tags": ["Claims"],
+        "summary": "Get claims",
+        "description": "Retrieve parking spot claims with optional filtering",
+        "parameters": [
+          {
+            "name": "claimer_id",
+            "in": "query",
+            "description": "Filter by claimer ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "availability_id",
+            "in": "query",
+            "description": "Filter by availability ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by claim status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ClaimStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Claims retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "claims": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Claim"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Claims"],
+        "summary": "Create claim",
+        "description": "Create a new claim for an available parking spot",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClaimRequest"
+              },
+              "example": {
+                "availability_id": "123e4567-e89b-12d3-a456-426614174000",
+                "notes": "Need spot for meeting"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Claim created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "claim": {
+                      "$ref": "#/components/schemas/Claim"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Claims"],
+        "summary": "Update claim",
+        "description": "Update an existing claim (claimers can update their own claims, spot owners can update claims for their spots)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Claim updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "claim": {
+                      "$ref": "#/components/schemas/Claim"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Claims"],
+        "summary": "Delete claim",
+        "description": "Delete a claim (claimers can delete their own claims, spot owners can delete claims for their spots)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "ID of the claim to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Claim deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Claim deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Supabase JWT token obtained from authentication"
+      }
+    },
+    "schemas": {
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique profile identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User's email address"
+          },
+          "full_name": {
+            "type": "string",
+            "description": "User's full name",
+            "nullable": true
+          },
+          "apartment_number": {
+            "type": "string",
+            "description": "User's apartment number"
+          },
+          "phone_number": {
+            "type": "string",
+            "description": "User's phone number",
+            "nullable": true
+          },
+          "is_approved": {
+            "type": "boolean",
+            "description": "Whether the user is approved by admin"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "description": "Whether the user has admin privileges"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Profile creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Profile last update timestamp"
+          }
+        },
+        "required": ["id", "email", "apartment_number", "is_approved", "is_admin", "created_at", "updated_at"]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique user identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User's email address"
+          },
+          "email_confirmed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Email confirmation timestamp",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "User creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "User last update timestamp"
+          }
+        },
+        "required": ["id", "email", "created_at", "updated_at"]
+      },
+      "ParkingSpot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique parking spot identifier"
+          },
+          "spot_number": {
+            "type": "string",
+            "description": "Parking spot number or identifier"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the user who owns this spot"
+          },
+          "building_section": {
+            "type": "string",
+            "description": "Building section or nearest elevator",
+            "nullable": true
+          },
+          "is_verified": {
+            "type": "boolean",
+            "description": "Whether the spot is verified by admin"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Spot creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Spot last update timestamp"
+          }
+        },
+        "required": ["id", "spot_number", "owner_id", "is_verified", "created_at", "updated_at"]
+      },
+      "Availability": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique availability identifier"
+          },
+          "spot_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the parking spot"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Availability start time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Availability end time"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes about the availability",
+            "nullable": true
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "Whether the availability is active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Availability creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Availability last update timestamp"
+          }
+        },
+        "required": ["id", "spot_id", "start_time", "end_time", "is_active", "created_at", "updated_at"]
+      },
+      "Claim": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique claim identifier"
+          },
+          "availability_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the availability being claimed"
+          },
+          "claimer_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the user making the claim"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ClaimStatus"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes about the claim",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Claim creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Claim last update timestamp"
+          }
+        },
+        "required": ["id", "availability_id", "claimer_id", "status", "created_at", "updated_at"]
+      },
+      "ClaimStatus": {
+        "type": "string",
+        "enum": ["pending", "confirmed", "expired", "cancelled"],
+        "description": "Status of a parking spot claim"
+      },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "User's full name"
+          },
+          "phone_number": {
+            "type": "string",
+            "description": "User's phone number"
+          }
+        }
+      },
+      "CreateParkingSpotRequest": {
+        "type": "object",
+        "properties": {
+          "spot_number": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Parking spot number or identifier"
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Location description of the parking spot"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes about the parking spot"
+          }
+        },
+        "required": ["spot_number", "location"]
+      },
+      "UpdateParkingSpotRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the parking spot to update"
+          },
+          "spot_number": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Parking spot number or identifier"
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Location description of the parking spot"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes about the parking spot"
+          }
+        },
+        "required": ["id"]
+      },
+      "CreateAvailabilityRequest": {
+        "type": "object",
+        "properties": {
+          "spot_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the parking spot"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Availability start time (must be in the future)"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Availability end time (must be after start time)"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes about the availability"
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether the availability is active"
+          }
+        },
+        "required": ["spot_id", "start_time", "end_time"]
+      },
+      "UpdateAvailabilityRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the availability to update"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Availability start time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Availability end time"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes about the availability"
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "Whether the availability is active"
+          }
+        },
+        "required": ["id"]
+      },
+      "CreateClaimRequest": {
+        "type": "object",
+        "properties": {
+          "availability_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the availability to claim"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes about the claim"
+          }
+        },
+        "required": ["availability_id"]
+      },
+      "UpdateClaimRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the claim to update"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ClaimStatus"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes about the claim"
+          }
+        },
+        "required": ["id"]
+      },
+      "DashboardResponse": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "mySpots": {
+                "type": "integer",
+                "description": "Number of parking spots owned by user"
+              },
+              "availableSpots": {
+                "type": "integer",
+                "description": "Number of spots currently available"
+              },
+              "activeClaims": {
+                "type": "integer",
+                "description": "Number of active claims by user"
+              },
+              "totalClaims": {
+                "type": "integer",
+                "description": "Total number of claims by user"
+              },
+              "pendingClaimsOnMySpots": {
+                "type": "integer",
+                "description": "Number of pending claims on user's spots"
+              },
+              "confirmedClaimsOnMySpots": {
+                "type": "integer",
+                "description": "Number of confirmed claims on user's spots"
+              }
+            }
+          },
+          "mySpots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParkingSpot"
+            }
+          },
+          "availableSpots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Availability"
+            }
+          },
+          "myClaims": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            }
+          },
+          "claimsOnMySpots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Non-fatal errors that occurred during data fetching"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error details (for validation errors)"
+          }
+        },
+        "required": ["error"]
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Authentication required",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Authentication required"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Insufficient permissions",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "You do not have permission to perform this action"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Resource not found"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Resource conflict",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "A parking spot with this number already exists"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Validation failed",
+              "details": {
+                "spot_number": {
+                  "_errors": ["Spot number is required"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Internal server error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

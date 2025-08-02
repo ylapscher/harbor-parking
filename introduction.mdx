@@ -1,0 +1,157 @@
+---
+title: Introduction
+description: 'Welcome to Harbor Parking API - Transform parking coordination in residential buildings'
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.png"
+  alt="Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.png"
+  alt="Hero Dark"
+/>
+
+## Welcome to Harbor Parking
+
+Harbor Parking is a modern resident parking spot sharing platform that transforms chaotic WhatsApp group coordination into a streamlined web application. Our API enables developers to build applications that help residents efficiently share unused parking spots, set availability windows, and coordinate guest parking.
+
+## What Harbor Parking Solves
+
+In residential buildings, parking coordination is often chaotic:
+- **Informal coordination** via WhatsApp groups leads to missed messages
+- **No transparency** about who owns which spots
+- **Conflicts arise** when multiple people want the same spot
+- **No audit trail** of parking arrangements
+- **Time-consuming** manual coordination processes
+
+Harbor Parking provides a structured, transparent solution that:
+- ✅ **Streamlines communication** with real-time availability updates
+- ✅ **Prevents conflicts** through organized claim management  
+- ✅ **Increases utilization** by making unused spots easily discoverable
+- ✅ **Provides accountability** with clear ownership and reservation records
+- ✅ **Saves time** through automated coordination workflows
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card
+    title="Smart Spot Sharing"
+    icon="car"
+    href="/concepts/parking-spots"
+  >
+    Register parking spots and set flexible availability windows when you're traveling or not using your car.
+  </Card>
+  <Card
+    title="Real-time Dashboard"
+    icon="gauge-high"
+    href="/api-reference/dashboard/get-dashboard"
+  >
+    View available spots and claim them instantly with live updates and conflict prevention.
+  </Card>
+  <Card
+    title="Admin Management"
+    icon="user-gear"
+    href="/concepts/users"
+  >
+    Building administrators can approve new users and verify spot ownership for trust and security.
+  </Card>
+  <Card
+    title="API-First Design"
+    icon="code"
+    href="/api-reference/introduction"
+  >
+    Complete REST API with OpenAPI 3.0 specification for building custom integrations and mobile apps.
+  </Card>
+</CardGroup>
+
+## How It Works
+
+<Steps>
+  <Step title="User Registration">
+    Residents sign up with their email and apartment details. Building administrators approve new users to maintain security.
+  </Step>
+  <Step title="Spot Registration">
+    Approved users register their parking spots with details like spot number and location. Admins verify ownership.
+  </Step>
+  <Step title="Set Availability">
+    When traveling or not using their car, users set availability windows for their spots with specific dates and times.
+  </Step>
+  <Step title="Find & Claim Spots">
+    Other residents view available spots on the dashboard and claim them for guest parking or temporary needs.
+  </Step>
+  <Step title="Automated Coordination">
+    The system manages the entire flow - from availability notifications to claim confirmations and conflict resolution.
+  </Step>
+</Steps>
+
+## API Overview
+
+Our REST API is designed with developers in mind:
+
+- **OpenAPI 3.0 Specification** - Complete documentation with interactive playground
+- **JWT Authentication** - Secure authentication using Supabase Auth tokens
+- **Real-time Updates** - WebSocket subscriptions for live data changes
+- **Rate Limiting** - Built-in protection against abuse
+- **Comprehensive Errors** - Detailed error responses with helpful messages
+- **TypeScript Support** - Generated types for full type safety
+
+## Quick Start
+
+Ready to integrate Harbor Parking into your application? Start with our quickstart guide:
+
+<Card
+  title="Quickstart Guide"
+  icon="rocket"
+  href="/quickstart"
+>
+  Get up and running with the Harbor Parking API in under 5 minutes
+</Card>
+
+## Popular Use Cases
+
+<AccordionGroup>
+  <Accordion title="Building Management Apps">
+    Property managers can integrate parking coordination directly into their resident portal applications, providing a seamless experience for tenants.
+  </Accordion>
+
+  <Accordion title="Mobile Applications">
+    Create native iOS and Android apps that allow residents to manage their parking spots and find available spaces on the go.
+  </Accordion>
+
+  <Accordion title="Smart Building Integration">
+    Connect parking data with IoT systems, access control, and building automation platforms for a comprehensive smart building solution.
+  </Accordion>
+
+  <Accordion title="Analytics Platforms">
+    Build dashboards that track parking utilization, peak usage times, and resident engagement to optimize parking policies.
+  </Accordion>
+</AccordionGroup>
+
+## Need Help?
+
+We're here to help you succeed with Harbor Parking:
+
+- **[API Reference](/api-reference/introduction)** - Complete endpoint documentation
+- **[Developer Guides](/guides/setup)** - Step-by-step implementation guides  
+- **[Code Examples](/examples/common-workflows)** - Ready-to-use code snippets
+- **[Community Support](https://github.com/ylapscher/harbor-parking/discussions)** - Connect with other developers
+
+<CardGroup cols={2}>
+  <Card
+    title="View on GitHub"
+    icon="github"
+    href="https://github.com/ylapscher/harbor-parking"
+  >
+    Explore the source code and contribute to the project
+  </Card>
+  <Card
+    title="Live Demo"
+    icon="globe"
+    href="https://harbor-parking.vercel.app"
+  >
+    Try the application with sample data
+  </Card>
+</CardGroup>

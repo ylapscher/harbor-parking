@@ -1,0 +1,713 @@
+---
+title: 'Error Handling'
+description: 'Complete guide to handling errors in the Harbor Parking API'
+---
+
+## Overview
+
+Harbor Parking API uses standard HTTP status codes and provides detailed error messages to help you handle different scenarios gracefully. All errors follow a consistent JSON format for easy parsing.
+
+## Error Response Format
+
+All API errors return a JSON object with this structure:
+
+```json
+{
+  "error": "Human-readable error message",
+  "details": {
+    // Additional error details (optional)
+  }
+}
+```
+
+### Basic Error Example
+
+```json
+{
+  "error": "Authentication required"
+}
+```
+
+### Validation Error Example
+
+```json
+{
+  "error": "Validation failed",
+  "details": {
+    "spot_number": {
+      "_errors": ["Spot number is required"]
+    },
+    "location": {
+      "_errors": ["Location must be at least 3 characters"]
+    }
+  }
+}
+```
+
+## HTTP Status Codes
+
+### 2xx Success Codes
+
+<AccordionGroup>
+  <Accordion title="200 OK">
+    **When**: Request processed successfully  
+    **Response**: Contains requested data  
+    **Action**: Process the response data normally
+  </Accordion>
+  
+  <Accordion title="201 Created">
+    **When**: Resource created successfully  
+    **Response**: Contains the new resource data  
+    **Action**: Update UI with new resource, show success message
+  </Accordion>
+</AccordionGroup>
+
+### 4xx Client Error Codes
+
+<AccordionGroup>
+  <Accordion title="400 Bad Request">
+    **When**: Invalid request data or validation errors  
+    **Response**: Detailed validation error messages  
+    **Action**: Show field-specific error messages to user
+    
+    ```json
+    {
+      "error": "Validation failed",
+      "details": {
+        "end_time": {
+          "_errors": ["End time must be after start time"]
+        }
+      }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="401 Unauthorized">
+    **When**: Missing, invalid, or expired authentication token  
+    **Response**: Generic authentication error  
+    **Action**: Redirect to login page, refresh token if possible
+    
+    ```json
+    {
+      "error": "Authentication required"
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="403 Forbidden">
+    **When**: Valid authentication but insufficient permissions  
+    **Response**: Permission-specific error message  
+    **Action**: Show permission error, redirect to appropriate page
+    
+    ```json
+    {
+      "error": "Account pending approval. Contact your building administrator."
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="404 Not Found">
+    **When**: Requested resource doesn't exist  
+    **Response**: Resource not found message  
+    **Action**: Show "not found" message, redirect to list view
+    
+    ```json
+    {
+      "error": "Parking spot not found"
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="409 Conflict">
+    **When**: Resource conflicts with existing data  
+    **Response**: Conflict-specific error message  
+    **Action**: Show conflict message, suggest alternatives
+    
+    ```json
+    {
+      "error": "A parking spot with this number already exists"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### 5xx Server Error Codes
+
+<AccordionGroup>
+  <Accordion title="500 Internal Server Error">
+    **When**: Unexpected server error  
+    **Response**: Generic server error message  
+    **Action**: Show generic error, retry request, contact support
+    
+    ```json
+    {
+      "error": "Internal server error"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Error Handling Patterns
+
+### Basic Error Handling
+
+<CodeGroup>
+
+```javascript JavaScript
+async function makeApiRequest(url, options = {}) {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`,
+        ...options.headers
+      },
+      ...options
+    });
+
+    // Parse response
+    const data = await response.json();
+
+    // Handle HTTP errors
+    if (!response.ok) {
+      throw new ApiError(data.error, response.status, data.details);
+    }
+
+    return data;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    
+    // Network or parsing errors
+    throw new ApiError('Network error or invalid response', 0);
+  }
+}
+```
+
+```python Python
+import requests
+import json
+
+class ApiError(Exception):
+    def __init__(self, message, status_code, details=None):
+        self.message = message
+        self.status_code = status_code
+        self.details = details or {}
+        super().__init__(self.message)
+
+def make_api_request(url, method='GET', **kwargs):
+    try:
+        response = requests.request(
+            method=method,
+            url=url,
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {get_token()}',
+                **kwargs.get('headers', {})
+            },
+            **kwargs
+        )
+        
+        data = response.json()
+        
+        if not response.ok:
+            raise ApiError(
+                data.get('error', 'Unknown error'),
+                response.status_code,
+                data.get('details')
+            )
+            
+        return data
+        
+    except requests.RequestException as e:
+        raise ApiError('Network error', 0) from e
+    except json.JSONDecodeError as e:
+        raise ApiError('Invalid JSON response', response.status_code) from e
+```
+
+</CodeGroup>
+
+### Custom Error Classes
+
+```javascript
+// Custom error classes for different error types
+class ApiError extends Error {
+  constructor(message, status, details = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.details = details;
+  }
+}
+
+class ValidationError extends ApiError {
+  constructor(message, details) {
+    super(message, 400, details);
+    this.name = 'ValidationError';
+  }
+  
+  getFieldErrors() {
+    const fieldErrors = {};
+    if (this.details) {
+      for (const [field, errors] of Object.entries(this.details)) {
+        fieldErrors[field] = errors._errors || [errors];
+      }
+    }
+    return fieldErrors;
+  }
+}
+
+class AuthenticationError extends ApiError {
+  constructor(message = 'Authentication required') {
+    super(message, 401);
+    this.name = 'AuthenticationError';
+  }
+}
+
+class PermissionError extends ApiError {
+  constructor(message = 'Insufficient permissions') {
+    super(message, 403);
+    this.name = 'PermissionError';
+  }
+}
+
+class NotFoundError extends ApiError {
+  constructor(message = 'Resource not found') {
+    super(message, 404);
+    this.name = 'NotFoundError';
+  }
+}
+
+class ConflictError extends ApiError {
+  constructor(message = 'Resource conflict') {
+    super(message, 409);
+    this.name = 'ConflictError';
+  }
+}
+```
+
+### Comprehensive Error Handler
+
+```javascript
+function handleApiError(error) {
+  console.error('API Error:', error);
+  
+  if (error instanceof ValidationError) {
+    // Show field-specific validation errors
+    const fieldErrors = error.getFieldErrors();
+    showValidationErrors(fieldErrors);
+    
+  } else if (error instanceof AuthenticationError) {
+    // Clear stored token and redirect to login
+    clearAuthToken();
+    redirectToLogin();
+    showNotification('Please log in again', 'error');
+    
+  } else if (error instanceof PermissionError) {
+    // Show permission denied message
+    if (error.message.includes('pending approval')) {
+      showPendingApprovalScreen();
+    } else {
+      showNotification('You don\'t have permission for this action', 'error');
+    }
+    
+  } else if (error instanceof NotFoundError) {
+    // Show not found message
+    showNotification('The requested item was not found', 'error');
+    
+  } else if (error instanceof ConflictError) {
+    // Show conflict resolution options
+    showNotification(error.message, 'warning');
+    
+  } else if (error.status >= 500) {
+    // Server errors - show generic message and retry option
+    showNotification('Server error. Please try again later.', 'error');
+    showRetryButton();
+    
+  } else {
+    // Network or unknown errors
+    showNotification('Something went wrong. Please check your connection.', 'error');
+  }
+  
+  // Log to analytics/monitoring
+  trackError(error);
+}
+```
+
+## React Error Boundaries
+
+### API Error Boundary Component
+
+```jsx
+import React from 'react';
+
+class ApiErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('API Error Boundary caught an error:', error, errorInfo);
+    
+    // Log to error tracking service
+    if (window.Sentry) {
+      window.Sentry.captureException(error, { 
+        contexts: { errorInfo }
+      });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-boundary">
+          <h2>Something went wrong</h2>
+          <p>We're sorry, but something unexpected happened.</p>
+          <button 
+            onClick={() => this.setState({ hasError: false, error: null })}
+          >
+            Try again
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Usage
+function App() {
+  return (
+    <ApiErrorBoundary>
+      <Dashboard />
+    </ApiErrorBoundary>
+  );
+}
+```
+
+### React Hook for Error Handling
+
+```jsx
+import { useState, useCallback } from 'react';
+
+function useErrorHandler() {
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleAsync = useCallback(async (asyncFunction) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const result = await asyncFunction();
+      return result;
+    } catch (err) {
+      setError(err);
+      handleApiError(err);
+      throw err; // Re-throw if caller wants to handle it
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  return {
+    error,
+    isLoading,
+    handleAsync,
+    clearError
+  };
+}
+
+// Usage in component
+function ParkingSpotForm() {
+  const { error, isLoading, handleAsync } = useErrorHandler();
+  
+  const handleSubmit = async (formData) => {
+    await handleAsync(async () => {
+      const response = await fetch('/api/parking-spots', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new ValidationError(errorData.error, errorData.details);
+      }
+      
+      return response.json();
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {error && <ErrorDisplay error={error} />}
+      {/* form fields */}
+      <button type="submit" disabled={isLoading}>
+        {isLoading ? 'Creating...' : 'Create Spot'}
+      </button>
+    </form>
+  );
+}
+```
+
+## Retry Strategies
+
+### Exponential Backoff
+
+```javascript
+async function retryWithBackoff(
+  fn, 
+  maxRetries = 3, 
+  baseDelay = 1000,
+  shouldRetry = (error) => error.status >= 500
+) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const isLastAttempt = attempt === maxRetries;
+      const shouldRetryError = shouldRetry(error);
+      
+      if (isLastAttempt || !shouldRetryError) {
+        throw error;
+      }
+      
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.log(`Attempt ${attempt} failed, retrying in ${delay}ms...`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
+// Usage
+const dashboard = await retryWithBackoff(
+  () => makeApiRequest('/api/dashboard'),
+  3, // max retries
+  1000, // base delay
+  (error) => error.status >= 500 // only retry server errors
+);
+```
+
+### Smart Retry Logic
+
+```javascript
+function shouldRetryRequest(error, attempt) {
+  // Don't retry client errors (4xx)
+  if (error.status >= 400 && error.status < 500) {
+    return false;
+  }
+  
+  // Don't retry after max attempts
+  if (attempt >= 3) {
+    return false;
+  }
+  
+  // Retry server errors and network errors
+  if (error.status >= 500 || error.status === 0) {
+    return true;
+  }
+  
+  return false;
+}
+```
+
+## Error Monitoring
+
+### Integration with Error Tracking Services
+
+```javascript
+// Sentry integration
+import * as Sentry from '@sentry/browser';
+
+function trackError(error) {
+  // Add context for API errors
+  Sentry.withScope((scope) => {
+    scope.setTag('error_type', 'api_error');
+    scope.setContext('api_error', {
+      status: error.status,
+      endpoint: error.endpoint,
+      details: error.details
+    });
+    
+    Sentry.captureException(error);
+  });
+  
+  // Track to analytics
+  if (window.gtag) {
+    window.gtag('event', 'api_error', {
+      event_category: 'errors',
+      event_label: error.message,
+      value: error.status
+    });
+  }
+}
+```
+
+### Custom Error Logger
+
+```javascript
+class ErrorLogger {
+  constructor(options = {}) {
+    this.apiEndpoint = options.apiEndpoint || '/api/errors';
+    this.bufferSize = options.bufferSize || 10;
+    this.flushInterval = options.flushInterval || 30000;
+    this.errorBuffer = [];
+    
+    // Flush errors periodically
+    setInterval(() => this.flush(), this.flushInterval);
+  }
+  
+  log(error, context = {}) {
+    const errorLog = {
+      timestamp: new Date().toISOString(),
+      message: error.message,
+      status: error.status,
+      stack: error.stack,
+      context,
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    };
+    
+    this.errorBuffer.push(errorLog);
+    
+    if (this.errorBuffer.length >= this.bufferSize) {
+      this.flush();
+    }
+  }
+  
+  async flush() {
+    if (this.errorBuffer.length === 0) return;
+    
+    const errors = this.errorBuffer.splice(0);
+    
+    try {
+      await fetch(this.apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ errors })
+      });
+    } catch (err) {
+      // Failed to log errors - add them back to buffer
+      this.errorBuffer.unshift(...errors);
+    }
+  }
+}
+
+const errorLogger = new ErrorLogger();
+```
+
+## Testing Error Scenarios
+
+### Unit Tests for Error Handling
+
+```javascript
+describe('API Error Handling', () => {
+  test('handles validation errors correctly', async () => {
+    const mockError = {
+      error: 'Validation failed',
+      details: {
+        spot_number: { _errors: ['Spot number is required'] }
+      }
+    };
+    
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: () => Promise.resolve(mockError)
+    });
+    
+    await expect(createParkingSpot({})).rejects.toThrow(ValidationError);
+  });
+  
+  test('retries server errors', async () => {
+    // First two calls fail, third succeeds
+    fetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ error: 'Server error' })
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ error: 'Server error' })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true })
+      });
+    
+    const result = await retryWithBackoff(() => makeApiRequest('/api/test'));
+    expect(result.success).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+});
+```
+
+## Best Practices
+
+### Do's ✅
+
+- **Always handle errors gracefully** - Never let unhandled errors crash your app
+- **Provide specific error messages** - Help users understand what went wrong
+- **Log errors appropriately** - Include context for debugging
+- **Implement retry logic** - For transient server errors
+- **Show loading states** - Keep users informed during async operations
+- **Validate input client-side** - Reduce server round trips for basic validation
+
+### Don'ts ❌
+
+- **Don't expose sensitive information** - In error messages or logs
+- **Don't retry indefinitely** - Set reasonable retry limits
+- **Don't ignore error details** - Use validation details to show field-specific errors
+- **Don't show technical errors to users** - Translate technical errors to user-friendly messages
+- **Don't block the UI** - Allow users to continue working after errors
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Authentication Errors"
+    icon="key"
+    href="/authentication#common-authentication-errors"
+  >
+    Handle authentication-specific errors
+  </Card>
+  <Card
+    title="API Reference"
+    icon="book"
+    href="/api-reference/introduction"
+  >
+    View detailed error responses for each endpoint
+  </Card>
+  <Card
+    title="JavaScript SDK"
+    icon="code"
+    href="/sdks/javascript#error-handling"
+  >
+    Use our SDK's built-in error handling
+  </Card>
+  <Card
+    title="Common Workflows"
+    icon="workflow"
+    href="/examples/common-workflows#error-handling-patterns"
+  >
+    See error handling in real-world examples
+  </Card>
+</CardGroup>

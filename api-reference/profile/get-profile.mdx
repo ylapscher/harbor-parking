@@ -1,0 +1,247 @@
+---
+title: "Get User Profile"
+api: "GET https://harbor-parking.vercel.app/api/profile"
+description: "Retrieve the authenticated user's profile information and basic user data"
+---
+
+## Overview
+
+This endpoint retrieves comprehensive profile and authentication data for the currently authenticated user. It returns both the user's profile information (managed by Harbor Parking) and their basic authentication data (managed by Supabase Auth).
+
+## Authentication
+
+<Snippet file="auth-required.mdx" />
+
+## Response
+
+<ResponseField name="profile" type="object" required>
+  User's Harbor Parking profile information
+  
+  <Expandable title="Profile Object">
+    <ResponseField name="id" type="string" required>
+      Unique profile identifier (UUID)
+    </ResponseField>
+    <ResponseField name="email" type="string" required>
+      User's email address
+    </ResponseField>
+    <ResponseField name="full_name" type="string">
+      User's full name (optional)
+    </ResponseField>
+    <ResponseField name="apartment_number" type="string" required>
+      User's apartment number in the building
+    </ResponseField>
+    <ResponseField name="phone_number" type="string">
+      User's phone number (optional)
+    </ResponseField>
+    <ResponseField name="is_approved" type="boolean" required>
+      Whether the user has been approved by a building administrator
+    </ResponseField>
+    <ResponseField name="is_admin" type="boolean" required>
+      Whether the user has administrator privileges
+    </ResponseField>
+    <ResponseField name="created_at" type="string" required>
+      Profile creation timestamp (ISO 8601)
+    </ResponseField>
+    <ResponseField name="updated_at" type="string" required>
+      Profile last update timestamp (ISO 8601)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="user" type="object" required>
+  User's authentication data from Supabase
+  
+  <Expandable title="User Object">
+    <ResponseField name="id" type="string" required>
+      Unique user identifier (UUID) - matches profile.id
+    </ResponseField>
+    <ResponseField name="email" type="string" required>
+      User's email address
+    </ResponseField>
+    <ResponseField name="email_confirmed_at" type="string">
+      Email confirmation timestamp (ISO 8601)
+    </ResponseField>
+    <ResponseField name="created_at" type="string" required>
+      User account creation timestamp (ISO 8601)
+    </ResponseField>
+    <ResponseField name="updated_at" type="string" required>
+      User account last update timestamp (ISO 8601)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET "https://harbor-parking.vercel.app/api/profile" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://harbor-parking.vercel.app/api/profile', {
+  method: 'GET',
+  headers: {
+    'Authorization': `Bearer ${yourJwtToken}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+const profileData = await response.json();
+console.log(profileData);
+```
+
+```python Python
+import requests
+
+url = "https://harbor-parking.vercel.app/api/profile"
+headers = {
+    "Authorization": f"Bearer {your_jwt_token}",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+profile_data = response.json()
+print(profile_data)
+```
+
+```php PHP
+<?php
+$url = 'https://harbor-parking.vercel.app/api/profile';
+$headers = [
+    'Authorization: Bearer ' . $your_jwt_token,
+    'Content-Type: application/json'
+];
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$response = curl_exec($ch);
+$profile_data = json_decode($response, true);
+curl_close($ch);
+
+print_r($profile_data);
+?>
+```
+
+</CodeGroup>
+
+## Example Response
+
+<ResponseExample>
+
+```json Success Response
+{
+  "profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "john.doe@example.com",
+    "full_name": "John Doe",
+    "apartment_number": "12A",
+    "phone_number": "+1234567890",
+    "is_approved": true,
+    "is_admin": false,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  },
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "john.doe@example.com",
+    "email_confirmed_at": "2024-01-15T10:30:00Z",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseExample>
+
+```json 401 Unauthorized
+{
+  "error": "Authentication required"
+}
+```
+
+```json 404 Not Found
+{
+  "error": "User profile not found"
+}
+```
+
+```json 500 Internal Server Error
+{
+  "error": "Internal server error"
+}
+```
+
+</ResponseExample>
+
+## Use Cases
+
+### Check User Approval Status
+
+```javascript
+const { profile } = await fetch('/api/profile').then(r => r.json());
+
+if (!profile.is_approved) {
+  // Redirect to pending approval page
+  showPendingApprovalMessage();
+} else {
+  // User can access full features
+  redirectToDashboard();
+}
+```
+
+### Display User Information
+
+```javascript
+const { profile, user } = await fetch('/api/profile').then(r => r.json());
+
+const userInfo = {
+  displayName: profile.full_name || user.email,
+  apartment: profile.apartment_number,
+  isAdmin: profile.is_admin,
+  memberSince: new Date(user.created_at).toLocaleDateString()
+};
+```
+
+### Profile Completeness Check
+
+```javascript
+function checkProfileCompleteness(profile) {
+  const missing = [];
+  
+  if (!profile.full_name) missing.push('full_name');
+  if (!profile.phone_number) missing.push('phone_number');
+  
+  return {
+    isComplete: missing.length === 0,
+    missingFields: missing,
+    completionPercentage: ((4 - missing.length) / 4) * 100
+  };
+}
+```
+
+## Rate Limiting
+
+This endpoint is rate limited to:
+- **10 requests per minute** per user
+- **100 requests per hour** per user
+
+## Security Notes
+
+- Profile data is protected by Row Level Security (RLS)
+- Users can only access their own profile data
+- Administrators can view all profiles through separate admin endpoints
+- Email and phone data should be handled securely in client applications
+
+<Card title="Next: Update Profile" icon="pen" href="/api-reference/profile/update-profile">
+  Learn how to update user profile information
+</Card>

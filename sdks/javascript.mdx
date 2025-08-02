@@ -1,0 +1,557 @@
+---
+title: 'JavaScript/TypeScript SDK'
+description: 'Official Harbor Parking SDK for JavaScript and TypeScript applications'
+---
+
+## Overview
+
+The Harbor Parking JavaScript/TypeScript SDK provides a convenient way to integrate parking spot sharing functionality into your applications. Built with modern JavaScript features and full TypeScript support.
+
+## Installation
+
+<CodeGroup>
+
+```bash npm
+npm install @harbor-parking/sdk
+```
+
+```bash yarn
+yarn add @harbor-parking/sdk
+```
+
+```bash pnpm
+pnpm add @harbor-parking/sdk
+```
+
+</CodeGroup>
+
+<Note>
+The SDK is currently in development. For now, you can use the raw API with our TypeScript types or create your own wrapper using the patterns shown below.
+</Note>
+
+## Quick Start
+
+### Basic Setup
+
+```typescript
+import { HarborParkingClient } from '@harbor-parking/sdk';
+
+// Initialize client
+const client = new HarborParkingClient({
+  baseUrl: 'https://harbor-parking.vercel.app/api',
+  // Token will be set after authentication
+});
+
+// Authenticate user
+await client.authenticate('user@example.com', 'password');
+
+// Now you can make authenticated requests
+const profile = await client.profile.get();
+console.log(profile);
+```
+
+### With Custom Configuration
+
+```typescript
+const client = new HarborParkingClient({
+  baseUrl: process.env.HARBOR_PARKING_API_URL,
+  timeout: 10000,
+  retries: 3,
+  onTokenExpired: async () => {
+    // Custom token refresh logic
+    const newToken = await refreshUserToken();
+    client.setToken(newToken);
+  },
+  onError: (error) => {
+    // Custom error handling
+    console.error('API Error:', error);
+    analytics.track('api_error', { error: error.message });
+  }
+});
+```
+
+## Core Client
+
+### HarborParkingClient
+
+The main client class that provides access to all API endpoints.
+
+```typescript
+interface ClientOptions {
+  baseUrl: string;
+  token?: string;
+  timeout?: number;
+  retries?: number;
+  onTokenExpired?: () => Promise<void>;
+  onError?: (error: Error) => void;
+}
+
+class HarborParkingClient {
+  constructor(options: ClientOptions);
+  
+  // Authentication
+  authenticate(email: string, password: string): Promise<AuthResult>;
+  setToken(token: string): void;
+  clearToken(): void;
+  
+  // API namespaces
+  profile: ProfileAPI;
+  dashboard: DashboardAPI;
+  parkingSpots: ParkingSpotsAPI;
+  availabilities: AvailabilitiesAPI;
+  claims: ClaimsAPI;
+}
+```
+
+## API Namespaces
+
+### Profile API
+
+```typescript
+// Get current user profile
+const profile = await client.profile.get();
+
+// Update profile
+const updatedProfile = await client.profile.update({
+  full_name: 'John Doe',
+  phone_number: '+1234567890'
+});
+
+// Check approval status
+const isApproved = profile.is_approved;
+if (!isApproved) {
+  console.log('Account pending approval');
+}
+```
+
+### Dashboard API
+
+```typescript
+// Get comprehensive dashboard data
+const dashboard = await client.dashboard.get();
+
+console.log('My spots:', dashboard.mySpots.length);
+console.log('Available spots:', dashboard.availableSpots.length);
+console.log('Active claims:', dashboard.myClaims.length);
+```
+
+### Parking Spots API
+
+```typescript
+// Get all parking spots
+const allSpots = await client.parkingSpots.list();
+
+// Get spots with filtering
+const mySpots = await client.parkingSpots.list({
+  owner_id: 'user-id-here'
+});
+
+// Create new parking spot
+const newSpot = await client.parkingSpots.create({
+  spot_number: 'A-15',
+  location: 'Level 2 Parking Garage',
+  notes: 'Near elevator'
+});
+
+// Update parking spot
+const updatedSpot = await client.parkingSpots.update(spotId, {
+  notes: 'Updated notes'
+});
+
+// Delete parking spot
+await client.parkingSpots.delete(spotId);
+```
+
+### Availabilities API
+
+```typescript
+// List all availabilities
+const allAvailabilities = await client.availabilities.list();
+
+// Get only available spots (active and future)
+const availableSpots = await client.availabilities.list({
+  available: true
+});
+
+// Create availability window
+const availability = await client.availabilities.create({
+  spot_id: 'spot-id-here',
+  start_time: '2024-12-25T10:00:00Z',
+  end_time: '2024-12-25T18:00:00Z',
+  notes: 'Holiday availability',
+  is_active: true
+});
+
+// Update availability
+const updated = await client.availabilities.update(availabilityId, {
+  end_time: '2024-12-25T20:00:00Z'
+});
+
+// Delete availability
+await client.availabilities.delete(availabilityId);
+```
+
+### Claims API
+
+```typescript
+// List user's claims
+const myClaims = await client.claims.list();
+
+// Get claims by status
+const pendingClaims = await client.claims.list({
+  status: 'pending'
+});
+
+// Create new claim
+const claim = await client.claims.create({
+  availability_id: 'availability-id-here',
+  notes: 'Need spot for meeting'
+});
+
+// Update claim status (for spot owners)
+const updatedClaim = await client.claims.update(claimId, {
+  status: 'confirmed',
+  notes: 'Approved for guest parking'
+});
+
+// Cancel claim
+await client.claims.delete(claimId);
+```
+
+## TypeScript Support
+
+The SDK includes comprehensive TypeScript definitions:
+
+```typescript
+import type {
+  Profile,
+  ParkingSpot,
+  Availability,
+  Claim,
+  DashboardResponse,
+  CreateParkingSpotRequest,
+  UpdateProfileRequest,
+  ApiError
+} from '@harbor-parking/sdk';
+
+// Type-safe API responses
+const profile: Profile = await client.profile.get();
+const dashboard: DashboardResponse = await client.dashboard.get();
+
+// Type-safe request objects
+const spotData: CreateParkingSpotRequest = {
+  spot_number: 'A-15',
+  location: 'Level 2 Parking Garage'
+};
+
+const newSpot: ParkingSpot = await client.parkingSpots.create(spotData);
+```
+
+## Error Handling
+
+### Built-in Error Classes
+
+```typescript
+import {
+  HarborParkingError,
+  AuthenticationError,
+  ValidationError,
+  NotFoundError,
+  PermissionError
+} from '@harbor-parking/sdk';
+
+try {
+  const profile = await client.profile.get();
+} catch (error) {
+  if (error instanceof AuthenticationError) {
+    // Redirect to login
+    redirectToLogin();
+  } else if (error instanceof ValidationError) {
+    // Show validation errors
+    showFormErrors(error.details);
+  } else if (error instanceof NotFoundError) {
+    // Handle not found
+    showNotFoundMessage();
+  } else if (error instanceof PermissionError) {
+    // Handle permission denied
+    showPermissionError();
+  } else {
+    // Generic error handling
+    showGenericError(error.message);
+  }
+}
+```
+
+### Global Error Handler
+
+```typescript
+const client = new HarborParkingClient({
+  baseUrl: 'https://harbor-parking.vercel.app/api',
+  onError: (error) => {
+    // Log to analytics
+    analytics.track('api_error', {
+      endpoint: error.endpoint,
+      status: error.status,
+      message: error.message
+    });
+    
+    // Show user-friendly notifications
+    if (error instanceof AuthenticationError) {
+      showNotification('Please log in again', 'error');
+    } else if (error instanceof ValidationError) {
+      showNotification('Please check your input', 'warning');
+    } else {
+      showNotification('Something went wrong', 'error');
+    }
+  }
+});
+```
+
+## React Integration
+
+### Custom Hook
+
+```typescript
+import { useState, useEffect } from 'react';
+import { HarborParkingClient } from '@harbor-parking/sdk';
+
+export function useHarborParking() {
+  const [client] = useState(() => new HarborParkingClient({
+    baseUrl: process.env.NEXT_PUBLIC_HARBOR_PARKING_API_URL!
+  }));
+  
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  useEffect(() => {
+    const token = localStorage.getItem('harbor_token');
+    if (token) {
+      client.setToken(token);
+      setIsAuthenticated(true);
+    }
+  }, [client]);
+  
+  const login = async (email: string, password: string) => {
+    const result = await client.authenticate(email, password);
+    localStorage.setItem('harbor_token', result.token);
+    setIsAuthenticated(true);
+    return result;
+  };
+  
+  const logout = () => {
+    client.clearToken();
+    localStorage.removeItem('harbor_token');
+    setIsAuthenticated(false);
+  };
+  
+  return {
+    client,
+    isAuthenticated,
+    login,
+    logout
+  };
+}
+```
+
+### React Component Example
+
+```typescript
+import React, { useState, useEffect } from 'react';
+import { useHarborParking } from './hooks/useHarborParking';
+import type { ParkingSpot } from '@harbor-parking/sdk';
+
+export function ParkingSpotsList() {
+  const { client, isAuthenticated } = useHarborParking();
+  const [spots, setSpots] = useState<ParkingSpot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    async function loadSpots() {
+      try {
+        setLoading(true);
+        setError(null);
+        const spotsData = await client.parkingSpots.list();
+        setSpots(spotsData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load spots');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadSpots();
+  }, [client, isAuthenticated]);
+  
+  if (!isAuthenticated) {
+    return <div>Please log in to view parking spots</div>;
+  }
+  
+  if (loading) {
+    return <div>Loading parking spots...</div>;
+  }
+  
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+  
+  return (
+    <div>
+      <h2>Parking Spots ({spots.length})</h2>
+      {spots.map(spot => (
+        <div key={spot.id} className="spot-card">
+          <h3>Spot {spot.spot_number}</h3>
+          <p>Location: {spot.building_section}</p>
+          <p>Status: {spot.is_verified ? 'Verified' : 'Pending'}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Node.js Server Usage
+
+```typescript
+import { HarborParkingClient } from '@harbor-parking/sdk';
+
+// Server-side client with service role key
+const adminClient = new HarborParkingClient({
+  baseUrl: process.env.HARBOR_PARKING_API_URL,
+  token: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  timeout: 30000
+});
+
+// Admin operations
+export async function approveUser(userId: string) {
+  try {
+    const result = await adminClient.admin.approveUser(userId);
+    
+    // Send notification email
+    await sendApprovalEmail(result.user.email);
+    
+    return result;
+  } catch (error) {
+    logger.error('Failed to approve user:', error);
+    throw error;
+  }
+}
+
+// Batch operations
+export async function getBuilingStats() {
+  const [spots, availabilities, claims] = await Promise.all([
+    adminClient.parkingSpots.list(),
+    adminClient.availabilities.list({ available: true }),
+    adminClient.claims.list({ status: 'pending' })
+  ]);
+  
+  return {
+    totalSpots: spots.length,
+    availableSpots: availabilities.length,
+    pendingClaims: claims.length,
+    utilizationRate: (spots.length - availabilities.length) / spots.length
+  };
+}
+```
+
+## Advanced Features
+
+### Caching
+
+```typescript
+import { HarborParkingClient, MemoryCache } from '@harbor-parking/sdk';
+
+const client = new HarborParkingClient({
+  baseUrl: 'https://harbor-parking.vercel.app/api',
+  cache: new MemoryCache({
+    ttl: 300000, // 5 minutes
+    maxSize: 100
+  })
+});
+
+// Cached requests (GET only)
+const profile = await client.profile.get(); // Network request
+const profileAgain = await client.profile.get(); // From cache
+```
+
+### Request Interceptors
+
+```typescript
+client.interceptors.request.use((config) => {
+  // Add custom headers
+  config.headers['X-Client-Version'] = '1.0.0';
+  config.headers['X-Request-ID'] = generateRequestId();
+  
+  return config;
+});
+
+client.interceptors.response.use(
+  (response) => {
+    // Log successful requests
+    logger.info('API request successful', {
+      method: response.config.method,
+      url: response.config.url,
+      status: response.status
+    });
+    return response;
+  },
+  (error) => {
+    // Log failed requests
+    logger.error('API request failed', {
+      method: error.config?.method,
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.message
+    });
+    return Promise.reject(error);
+  }
+);
+```
+
+### Real-time Subscriptions
+
+```typescript
+// Subscribe to availability changes
+const subscription = client.subscriptions.availabilities({
+  onUpdate: (availability) => {
+    console.log('Availability updated:', availability);
+    // Update UI
+  },
+  onDelete: (availabilityId) => {
+    console.log('Availability deleted:', availabilityId);
+    // Remove from UI
+  },
+  onError: (error) => {
+    console.error('Subscription error:', error);
+  }
+});
+
+// Clean up subscription
+subscription.unsubscribe();
+```
+
+## Examples Repository
+
+For more examples and sample applications, check out our examples repository:
+
+<Card 
+  title="SDK Examples" 
+  icon="code" 
+  href="https://github.com/ylapscher/harbor-parking-examples"
+>
+  Complete example applications using the Harbor Parking SDK
+</Card>
+
+## Contributing
+
+The SDK is open source and contributions are welcome:
+
+<CardGroup cols={2}>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/ylapscher/harbor-parking-sdk">
+    View source code and contribute
+  </Card>
+  <Card title="Report Issues" icon="bug" href="https://github.com/ylapscher/harbor-parking-sdk/issues">
+    Report bugs and request features
+  </Card>
+</CardGroup>

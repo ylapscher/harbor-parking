@@ -1,0 +1,405 @@
+---
+title: 'Users & Profiles'
+description: 'Understand user management, roles, and the approval workflow in Harbor Parking'
+---
+
+## Overview
+
+Harbor Parking uses a **two-tier user system** combining Supabase authentication with custom profile management. This ensures security while providing building administrators control over who can access the platform.
+
+## User Lifecycle
+
+<Steps>
+  <Step title="Registration">
+    Users sign up with email, password, and apartment details through the web interface.
+  </Step>
+  <Step title="Email Verification">
+    Users must verify their email address before proceeding.
+  </Step>
+  <Step title="Profile Creation">
+    System automatically creates a profile record with approval status set to `false`.
+  </Step>
+  <Step title="Admin Approval">
+    Building administrators review and approve new users for security and community trust.
+  </Step>
+  <Step title="Full Access">
+    Approved users gain access to all platform features including spot registration and claiming.
+  </Step>
+</Steps>
+
+## User Roles
+
+### Regular Resident
+**Default role for approved users**
+
+**Permissions:**
+- ✅ View and update own profile
+- ✅ Register and manage own parking spots
+- ✅ Set availability windows for owned spots
+- ✅ View all available spots in the building
+- ✅ Claim available spots
+- ✅ Manage own claims
+- ❌ Cannot approve other users
+- ❌ Cannot verify parking spot ownership
+
+### Building Admin
+**Elevated role for building management**
+
+**Permissions:**
+- ✅ All regular user permissions
+- ✅ **Approve/reject user registrations**
+- ✅ **Verify parking spot ownership**
+- ✅ **View all claims in the building**
+- ✅ **Access usage analytics**
+- ✅ **Manage building-wide settings**
+- ❌ Cannot access other buildings (single-building scope)
+
+### Super Admin
+**System-wide administrative access**
+
+**Permissions:**
+- ✅ All building admin permissions
+- ✅ **Multi-building management**
+- ✅ **System configuration**
+- ✅ **Platform-wide analytics**
+- ✅ **User role management**
+
+## User Data Structure
+
+### Profile Schema
+
+```typescript
+interface Profile {
+  id: string                    // UUID - matches auth user ID
+  email: string                 // User's email address
+  full_name?: string | null     // Display name (optional)
+  apartment_number: string      // Required for building identification
+  phone_number?: string | null  // Contact information (optional)
+  is_approved: boolean          // Admin approval status
+  is_admin: boolean            // Admin role flag
+  created_at: string           // ISO timestamp
+  updated_at: string           // ISO timestamp
+}
+```
+
+### Authentication User Schema
+
+```typescript
+interface User {
+  id: string                        // UUID - matches profile ID
+  email: string                     // Email address
+  email_confirmed_at?: string | null // Email verification timestamp
+  created_at: string                // ISO timestamp
+  updated_at: string                // ISO timestamp
+}
+```
+
+## API Endpoints
+
+### Get User Profile
+
+Retrieve the authenticated user's profile and auth data:
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET "https://harbor-parking.vercel.app/api/profile" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('/api/profile', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+
+const { profile, user } = await response.json();
+```
+
+</CodeGroup>
+
+**Response:**
+```json
+{
+  "profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "john.doe@example.com",
+    "full_name": "John Doe",
+    "apartment_number": "12A",
+    "phone_number": "+1234567890",
+    "is_approved": true,
+    "is_admin": false,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  },
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "john.doe@example.com",
+    "email_confirmed_at": "2024-01-15T10:30:00Z",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+### Update Profile
+
+Update the authenticated user's profile information:
+
+<CodeGroup>
+
+```bash cURL
+curl -X PUT "https://harbor-parking.vercel.app/api/profile" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "full_name": "John Smith",
+    "phone_number": "+1234567890"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('/api/profile', {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    full_name: 'John Smith',
+    phone_number: '+1234567890'
+  })
+});
+```
+
+</CodeGroup>
+
+## Approval Workflow
+
+### For New Users
+
+1. **Self-Registration**: Users sign up independently
+2. **Automatic Profile Creation**: System creates profile with `is_approved: false`
+3. **Limited Access**: Unapproved users can only view their profile
+4. **Admin Notification**: Building admins see pending approvals in their dashboard
+5. **Manual Review**: Admins verify apartment ownership and user legitimacy
+6. **Approval/Rejection**: Admin approves or rejects with optional feedback
+
+### Admin Actions
+
+**Approve User:**
+```javascript
+// Admin-only endpoint
+await fetch('/api/admin/users/approve', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${adminToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    user_id: '123e4567-e89b-12d3-a456-426614174000'
+  })
+});
+```
+
+**Reject User:**
+```javascript
+// Admin-only endpoint
+await fetch('/api/admin/users/reject', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${adminToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    user_id: '123e4567-e89b-12d3-a456-426614174000',
+    reason: 'Invalid apartment number'
+  })
+});
+```
+
+## Security & Privacy
+
+### Row Level Security (RLS)
+
+Users can only access their own data and approved public information:
+
+```sql
+-- Profile access policy
+CREATE POLICY "Users can view own profile" ON profiles
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON profiles  
+  FOR UPDATE USING (auth.uid() = id);
+
+-- Admin access for user management
+CREATE POLICY "Admins can view all profiles" ON profiles
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM profiles 
+      WHERE id = auth.uid() AND is_admin = true
+    )
+  );
+```
+
+### Data Privacy
+
+- **Email addresses** are visible to building admins only
+- **Phone numbers** are optional and visible to spot owners during claims
+- **Apartment numbers** are visible to admins and during parking transactions
+- **Full names** are visible in parking-related interactions
+
+### Audit Trail
+
+All user actions are logged for security and dispute resolution:
+
+- Profile updates
+- Login/logout events  
+- Admin actions (approvals, rejections)
+- Role changes
+- Permission grants/revocations
+
+## User States
+
+### Pending Approval
+```json
+{
+  "is_approved": false,
+  "is_admin": false
+}
+```
+**Access**: Profile view/edit only
+
+### Approved User
+```json
+{
+  "is_approved": true,
+  "is_admin": false  
+}
+```
+**Access**: Full resident features
+
+### Building Admin
+```json
+{
+  "is_approved": true,
+  "is_admin": true
+}
+```
+**Access**: All resident features + admin panel
+
+### Rejected User
+Profile deleted or marked inactive - cannot access platform
+
+## Common Patterns
+
+### Check User Approval Status
+
+```javascript
+function checkUserAccess(profile) {
+  if (!profile.is_approved) {
+    return {
+      canRegisterSpots: false,
+      canClaimSpots: false,
+      canSetAvailability: false,
+      message: 'Account pending approval'
+    };
+  }
+  
+  return {
+    canRegisterSpots: true,
+    canClaimSpots: true,
+    canSetAvailability: true,
+    isAdmin: profile.is_admin
+  };
+}
+```
+
+### Handle Unapproved Users
+
+```javascript
+// Redirect unapproved users appropriately
+if (!profile.is_approved) {
+  // Show pending approval message
+  return <PendingApprovalScreen />;
+}
+
+// Continue with normal flow for approved users
+return <Dashboard />;
+```
+
+## Error Handling
+
+### Common User-Related Errors
+
+<AccordionGroup>
+
+<Accordion title="403 - Account Not Approved">
+```json
+{
+  "error": "Account pending approval. Contact your building administrator."
+}
+```
+User account exists but hasn't been approved by admin.
+</Accordion>
+
+<Accordion title="404 - Profile Not Found">
+```json
+{
+  "error": "User profile not found"
+}
+```
+Authentication successful but no profile record exists.
+</Accordion>
+
+<Accordion title="400 - Invalid Apartment Number">
+```json
+{
+  "error": "Validation failed",
+  "details": {
+    "apartment_number": {
+      "_errors": ["Apartment number is required"]
+    }
+  }
+}
+```
+Profile update with invalid apartment number format.
+</Accordion>
+
+</AccordionGroup>
+
+## Next Steps
+
+Understanding users is fundamental to Harbor Parking. Next, explore:
+
+<CardGroup cols={2}>
+  <Card
+    title="Parking Spots"
+    icon="car"
+    href="/concepts/parking-spots"
+  >
+    Learn how users register and manage parking spots
+  </Card>
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/authentication"
+  >
+    Deep dive into JWT tokens and security
+  </Card>
+  <Card
+    title="Admin Features"
+    icon="user-gear"
+    href="/guides/admin-setup"
+  >
+    Set up and manage building administration
+  </Card>
+  <Card
+    title="API Reference"
+    icon="book"
+    href="/api-reference/profile/get-profile"
+  >
+    Complete profile endpoint documentation
+  </Card>
+</CardGroup>

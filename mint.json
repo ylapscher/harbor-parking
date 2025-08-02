@@ -1,0 +1,160 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Harbor Parking API",
+  "favicon": "/favicon.ico",
+  "colors": {
+    "primary": "#2563eb",
+    "light": "#3b82f6",
+    "dark": "#1d4ed8",
+    "anchors": {
+      "from": "#2563eb",
+      "to": "#3b82f6"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Live App",
+      "url": "https://harbor-parking.vercel.app"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "GitHub",
+    "url": "https://github.com/ylapscher/harbor-parking"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    },
+    {
+      "name": "SDKs",
+      "url": "sdks"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Live Demo",
+      "icon": "globe",
+      "url": "https://harbor-parking.vercel.app"
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/ylapscher/harbor-parking"
+    },
+    {
+      "name": "Community",
+      "icon": "comments",
+      "url": "https://github.com/ylapscher/harbor-parking/discussions"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "authentication"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "concepts/users",
+        "concepts/parking-spots",
+        "concepts/availability",
+        "concepts/claims"
+      ]
+    },
+    {
+      "group": "Developer Guides",
+      "pages": [
+        "guides/setup",
+        "guides/authentication-setup",
+        "guides/webhooks",
+        "guides/errors"
+      ]
+    },
+    {
+      "group": "Examples",
+      "pages": [
+        "examples/common-workflows",
+        "examples/mobile-app",
+        "examples/web-integration"
+      ]
+    },
+    {
+      "group": "API Documentation",
+      "pages": [
+        "api-reference/introduction",
+        "api-reference/authentication"
+      ]
+    },
+    {
+      "group": "Profile & Authentication",
+      "pages": [
+        "api-reference/profile/get-profile",
+        "api-reference/profile/update-profile"
+      ]
+    },
+    {
+      "group": "Dashboard",
+      "pages": [
+        "api-reference/dashboard/get-dashboard"
+      ]
+    },
+    {
+      "group": "Parking Spots",
+      "pages": [
+        "api-reference/parking-spots/list-spots",
+        "api-reference/parking-spots/create-spot",
+        "api-reference/parking-spots/update-spot",
+        "api-reference/parking-spots/delete-spot"
+      ]
+    },
+    {
+      "group": "Availabilities",
+      "pages": [
+        "api-reference/availabilities/list-availabilities",
+        "api-reference/availabilities/create-availability",
+        "api-reference/availabilities/update-availability",
+        "api-reference/availabilities/delete-availability"
+      ]
+    },
+    {
+      "group": "Claims",
+      "pages": [
+        "api-reference/claims/list-claims",
+        "api-reference/claims/create-claim",
+        "api-reference/claims/update-claim",
+        "api-reference/claims/delete-claim"
+      ]
+    },
+    {
+      "group": "SDKs & Libraries",
+      "pages": [
+        "sdks/javascript",
+        "sdks/python",
+        "sdks/typescript"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/ylapscher/harbor-parking",
+    "linkedin": "https://www.linkedin.com/company/mintlify"
+  },
+  "openapi": [
+    {
+      "url": "openapi.yaml"
+    }
+  ],
+  "api": {
+    "baseUrl": "https://harbor-parking.vercel.app/api",
+    "auth": {
+      "method": "bearer"
+    },
+    "playground": {
+      "mode": "show"
+    }
+  }
+}

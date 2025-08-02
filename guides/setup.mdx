@@ -1,0 +1,428 @@
+---
+title: 'Development Setup'
+description: 'Complete guide to setting up Harbor Parking for local development'
+---
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your development machine:
+
+<AccordionGroup>
+  <Accordion title="Required Software">
+    - **Node.js 18+** - [Download from nodejs.org](https://nodejs.org/)
+    - **npm** (comes with Node.js) or **yarn**
+    - **Git** - [Download from git-scm.com](https://git-scm.com/)
+    - **VS Code** (recommended) - [Download from code.visualstudio.com](https://code.visualstudio.com/)
+  </Accordion>
+
+  <Accordion title="Accounts Required">
+    - **Supabase Account** - [Sign up at supabase.com](https://supabase.com/)
+    - **Vercel Account** (for deployment) - [Sign up at vercel.com](https://vercel.com/)
+    - **GitHub Account** - [Sign up at github.com](https://github.com/)
+  </Accordion>
+</AccordionGroup>
+
+## Quick Setup
+
+<Steps>
+  <Step title="Clone the Repository">
+    ```bash
+    git clone https://github.com/ylapscher/harbor-parking.git
+    cd harbor-parking
+    ```
+  </Step>
+  
+  <Step title="Install Dependencies">
+    ```bash
+    npm install
+    ```
+  </Step>
+  
+  <Step title="Set up Environment Variables">
+    ```bash
+    cp .env.local.template .env.local
+    ```
+    
+    Edit `.env.local` with your Supabase credentials:
+    ```env
+    NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+    ```
+  </Step>
+  
+  <Step title="Set up Database">
+    Run the database migration scripts in your Supabase dashboard (see Database Setup below).
+  </Step>
+  
+  <Step title="Start Development Server">
+    ```bash
+    npm run dev
+    ```
+    
+    Open [http://localhost:3000](http://localhost:3000) to view the application.
+  </Step>
+</Steps>
+
+## Detailed Setup
+
+### 1. Supabase Project Setup
+
+<Accordion title="Create Supabase Project">
+1. Go to [supabase.com](https://supabase.com) and sign up/sign in
+2. Click "New Project"
+3. Choose your organization
+4. Enter project details:
+   - **Name**: Harbor Parking
+   - **Database Password**: Choose a strong password
+   - **Region**: Select closest to your users
+5. Click "Create new project"
+6. Wait for project to be created (2-3 minutes)
+</Accordion>
+
+<Accordion title="Get API Credentials">
+1. In your Supabase dashboard, go to **Settings** → **API**
+2. Copy the following values:
+   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+   - **anon/public key** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **service_role key** → `SUPABASE_SERVICE_ROLE_KEY` (keep secret!)
+</Accordion>
+
+### 2. Database Schema Setup
+
+<Warning>
+The database schema includes Row Level Security policies. Make sure to run all scripts as provided.
+</Warning>
+
+<Accordion title="Core Tables">
+Run these SQL commands in your Supabase SQL Editor:
+
+```sql
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Profiles table
+CREATE TABLE public.profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  email TEXT NOT NULL,
+  full_name TEXT,
+  apartment_number TEXT NOT NULL,
+  phone_number TEXT,
+  is_approved BOOLEAN DEFAULT FALSE,
+  is_admin BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Parking spots table  
+CREATE TABLE public.parking_spots (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  spot_number TEXT NOT NULL,
+  building_section TEXT,
+  is_verified BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(spot_number)
+);
+
+-- Availabilities table
+CREATE TABLE public.availabilities (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  spot_id UUID REFERENCES public.parking_spots(id) ON DELETE CASCADE NOT NULL,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  notes TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CHECK (end_time > start_time),
+  CHECK (start_time > NOW())
+);
+
+-- Claims table
+CREATE TABLE public.claims (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  availability_id UUID REFERENCES public.availabilities(id) ON DELETE CASCADE NOT NULL,
+  claimer_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  status TEXT CHECK (status IN ('pending', 'confirmed', 'expired', 'cancelled')) DEFAULT 'pending',
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+</Accordion>
+
+<Accordion title="Row Level Security Policies">
+```sql
+-- Enable RLS on all tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.parking_spots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.availabilities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.claims ENABLE ROW LEVEL SECURITY;
+
+-- Profiles policies
+CREATE POLICY "Users can view own profile" ON public.profiles
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON public.profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Admins can view all profiles" ON public.profiles
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles 
+      WHERE id = auth.uid() AND is_admin = true
+    )
+  );
+
+-- Parking spots policies
+CREATE POLICY "Users can view parking spots" ON public.parking_spots
+  FOR SELECT USING (true);
+
+CREATE POLICY "Users can insert own parking spots" ON public.parking_spots
+  FOR INSERT WITH CHECK (auth.uid() = owner_id);
+
+CREATE POLICY "Users can update own parking spots" ON public.parking_spots
+  FOR UPDATE USING (auth.uid() = owner_id);
+
+CREATE POLICY "Users can delete own parking spots" ON public.parking_spots
+  FOR DELETE USING (auth.uid() = owner_id);
+
+-- Availabilities policies
+CREATE POLICY "Users can view availabilities" ON public.availabilities
+  FOR SELECT USING (true);
+
+CREATE POLICY "Spot owners can manage availabilities" ON public.availabilities
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.parking_spots 
+      WHERE id = spot_id AND owner_id = auth.uid()
+    )
+  );
+
+-- Claims policies  
+CREATE POLICY "Users can view own claims" ON public.claims
+  FOR SELECT USING (auth.uid() = claimer_id);
+
+CREATE POLICY "Spot owners can view claims on their spots" ON public.claims
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.parking_spots ps
+      JOIN public.availabilities a ON ps.id = a.spot_id
+      WHERE a.id = availability_id AND ps.owner_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can create claims" ON public.claims
+  FOR INSERT WITH CHECK (auth.uid() = claimer_id);
+
+CREATE POLICY "Users can update own claims" ON public.claims
+  FOR UPDATE USING (auth.uid() = claimer_id);
+
+CREATE POLICY "Spot owners can update claims on their spots" ON public.claims
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.parking_spots ps
+      JOIN public.availabilities a ON ps.id = a.spot_id  
+      WHERE a.id = availability_id AND ps.owner_id = auth.uid()
+    )
+  );
+```
+</Accordion>
+
+<Accordion title="Database Functions and Triggers">
+```sql
+-- Update updated_at timestamp function
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Apply to all tables
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_parking_spots_updated_at BEFORE UPDATE ON public.parking_spots
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_availabilities_updated_at BEFORE UPDATE ON public.availabilities  
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_claims_updated_at BEFORE UPDATE ON public.claims
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Auto-create profile on user signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, apartment_number)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'apartment_number', 'Unknown')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+```
+</Accordion>
+
+### 3. Environment Configuration
+
+Create `.env.local` with your Supabase credentials:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+
+# Optional: Analytics and monitoring
+NEXT_PUBLIC_VERCEL_ANALYTICS_ID=your-vercel-analytics-id
+
+# Optional: Error tracking
+SENTRY_DSN=your-sentry-dsn
+```
+
+<Warning>
+Never commit `.env.local` to version control. The `.gitignore` file already excludes it.
+</Warning>
+
+### 4. Development Workflow
+
+<Accordion title="Available Commands">
+```bash
+# Development server with hot reload
+npm run dev
+
+# Production build
+npm run build
+
+# Start production server
+npm start
+
+# Run ESLint
+npm run lint
+
+# Fix ESLint issues automatically
+npm run lint:fix
+
+# Type checking
+npm run type-check
+
+# Run tests (if configured)
+npm test
+```
+</Accordion>
+
+<Accordion title="VS Code Setup">
+Install recommended extensions:
+
+1. **ES7+ React/Redux/React-Native snippets**
+2. **Tailwind CSS IntelliSense** 
+3. **TypeScript Importer**
+4. **ESLint**
+5. **Prettier - Code formatter**
+
+VS Code settings (`.vscode/settings.json`):
+```json
+{
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "tailwindCSS.includeLanguages": {
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
+  }
+}
+```
+</Accordion>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Database Connection Issues">
+    **Symptoms**: API requests fail with database errors
+    
+    **Solutions**:
+    - Verify Supabase credentials in `.env.local`
+    - Check if database tables exist in Supabase dashboard
+    - Ensure RLS policies are correctly applied
+    - Verify your IP is allowed in Supabase dashboard
+  </Accordion>
+
+  <Accordion title="Authentication Not Working">
+    **Symptoms**: Users can't sign up or log in
+    
+    **Solutions**:
+    - Check `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+    - Verify email authentication is enabled in Supabase Auth settings
+    - Check browser console for CORS errors
+    - Ensure `auth.users` trigger function is created
+  </Accordion>
+
+  <Accordion title="Build Errors">
+    **Symptoms**: `npm run build` fails
+    
+    **Solutions**:
+    - Run `npm run type-check` to find TypeScript errors
+    - Run `npm run lint` to find linting issues
+    - Clear cache: `rm -rf .next && npm run build`
+    - Verify all environment variables are set
+  </Accordion>
+
+  <Accordion title="Port Already in Use">
+    **Symptoms**: Development server won't start
+    
+    **Solutions**:
+    ```bash
+    # Find process using port 3000
+    lsof -ti:3000
+    
+    # Kill the process
+    kill -9 $(lsof -ti:3000)
+    
+    # Or use different port
+    npm run dev -- -p 3001
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Once your development environment is set up:
+
+<CardGroup cols={2}>
+  <Card title="Create Test Users" icon="users" href="/guides/authentication-setup">
+    Set up test users and admin accounts for development
+  </Card>
+  <Card title="API Testing" icon="vial" href="/quickstart">
+    Make your first API requests and test functionality
+  </Card>
+  <Card title="Deploy to Production" icon="rocket" href="/guides/deployment">
+    Deploy your Harbor Parking instance to Vercel
+  </Card>
+  <Card title="Customize Features" icon="paintbrush" href="/guides/customization">
+    Adapt Harbor Parking for your specific building needs
+  </Card>
+</CardGroup>
+
+## Development Best Practices
+
+- **Use TypeScript strictly** - Enable all strict mode options
+- **Follow ESLint rules** - Run linting before commits
+- **Test API endpoints** - Use tools like Postman or Insomnia
+- **Monitor database** - Check Supabase logs for issues
+- **Version control** - Commit frequently with clear messages
+- **Environment isolation** - Never mix development and production data

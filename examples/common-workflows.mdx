@@ -1,0 +1,644 @@
+---
+title: 'Common Workflows'
+description: 'Real-world examples and patterns for integrating Harbor Parking API'
+---
+
+## Overview
+
+This guide covers the most common integration patterns and workflows for the Harbor Parking API. Each example includes complete code samples and error handling.
+
+## Complete User Journey
+
+### 1. User Registration & Approval
+
+```javascript
+// 1. User signs up (handled by Supabase Auth)
+const { data: authData, error } = await supabase.auth.signUp({
+  email: 'user@example.com',
+  password: 'securepassword',
+  options: {
+    data: {
+      apartment_number: '12A'
+    }
+  }
+});
+
+// 2. Check profile status after login
+async function checkUserStatus(token) {
+  const response = await fetch('/api/profile', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  const { profile } = await response.json();
+  
+  if (!profile.is_approved) {
+    return { status: 'pending', message: 'Waiting for admin approval' };
+  }
+  
+  return { status: 'approved', profile };
+}
+
+// 3. Admin approves user (admin interface)
+async function approveUser(adminToken, userId) {
+  const response = await fetch('/api/admin/users/approve', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${adminToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ user_id: userId })
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to approve user');
+  }
+  
+  return await response.json();
+}
+```
+
+### 2. Parking Spot Management
+
+```javascript
+// Register a new parking spot
+async function registerParkingSpot(token, spotData) {
+  try {
+    const response = await fetch('/api/parking-spots', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        spot_number: spotData.number,
+        location: spotData.location,
+        notes: spotData.notes
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to register spot');
+    }
+
+    const { spot } = await response.json();
+    return spot;
+  } catch (error) {
+    console.error('Spot registration failed:', error);
+    throw error;
+  }
+}
+
+// Get user's parking spots
+async function getUserSpots(token) {
+  const response = await fetch('/api/parking-spots', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  const { spots } = await response.json();
+  return spots;
+}
+
+// Update parking spot details
+async function updateParkingSpot(token, spotId, updates) {
+  const response = await fetch('/api/parking-spots', {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      id: spotId,
+      ...updates
+    })
+  });
+  
+  return await response.json();
+}
+```
+
+### 3. Availability Management
+
+```javascript
+// Set parking spot availability
+async function setSpotAvailability(token, availabilityData) {
+  const response = await fetch('/api/availabilities', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      spot_id: availabilityData.spotId,
+      start_time: availabilityData.startTime,
+      end_time: availabilityData.endTime,
+      notes: availabilityData.notes,
+      is_active: true
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error);
+  }
+  
+  return await response.json();
+}
+
+// Get available spots for claiming
+async function getAvailableSpots(token) {
+  const response = await fetch('/api/availabilities?available=true', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  const { availabilities } = await response.json();
+  
+  // Filter out user's own spots and expired availabilities
+  const now = new Date();
+  return availabilities.filter(availability => 
+    new Date(availability.end_time) > now &&
+    availability.is_active
+  );
+}
+
+// Update availability (extend time, add notes, etc.)
+async function updateAvailability(token, availabilityId, updates) {
+  const response = await fetch('/api/availabilities', {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      id: availabilityId,
+      ...updates
+    })
+  });
+  
+  return await response.json();
+}
+```
+
+### 4. Spot Claiming Workflow
+
+```javascript
+// Claim an available parking spot
+async function claimParkingSpot(token, availabilityId, notes) {
+  try {
+    const response = await fetch('/api/claims', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        availability_id: availabilityId,
+        notes: notes
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      if (response.status === 409) {
+        throw new Error('This spot has already been claimed');
+      }
+      throw new Error(error.error || 'Failed to claim spot');
+    }
+
+    const { claim } = await response.json();
+    return claim;
+  } catch (error) {
+    console.error('Claiming failed:', error);
+    throw error;
+  }
+}
+
+// Get user's claims with status filtering
+async function getUserClaims(token, status = null) {
+  let url = '/api/claims';
+  if (status) {
+    url += `?status=${status}`;
+  }
+  
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  const { claims } = await response.json();
+  return claims;
+}
+
+// Update claim status (for spot owners)
+async function updateClaimStatus(token, claimId, status, notes = '') {
+  const response = await fetch('/api/claims', {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      id: claimId,
+      status: status, // 'confirmed', 'cancelled', etc.
+      notes: notes
+    })
+  });
+  
+  return await response.json();
+}
+```
+
+## Advanced Patterns
+
+### Real-time Updates with Supabase
+
+```javascript
+// Subscribe to real-time availability changes
+function subscribeToAvailabilityUpdates(callback) {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
+  const subscription = supabase
+    .channel('availabilities')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'availabilities'
+    }, callback)
+    .subscribe();
+    
+  return subscription;
+}
+
+// Usage
+const subscription = subscribeToAvailabilityUpdates((payload) => {
+  console.log('Availability changed:', payload);
+  // Refresh available spots in UI
+  refreshAvailableSpots();
+});
+
+// Clean up subscription
+subscription.unsubscribe();
+```
+
+### Optimistic UI Updates
+
+```javascript
+// Optimistically update UI before API confirmation
+async function optimisticClaimSpot(availabilityId, notes) {
+  // 1. Immediately update UI
+  updateUIWithClaim(availabilityId, 'pending');
+  
+  try {
+    // 2. Make API request
+    const claim = await claimParkingSpot(token, availabilityId, notes);
+    
+    // 3. Update UI with real data
+    updateUIWithClaim(availabilityId, claim.status, claim);
+    
+    return claim;
+  } catch (error) {
+    // 4. Revert UI on error
+    revertUIChange(availabilityId);
+    throw error;
+  }
+}
+```
+
+### Batch Operations
+
+```javascript
+// Set multiple availability windows
+async function setMultipleAvailabilities(token, availabilities) {
+  const results = await Promise.allSettled(
+    availabilities.map(availability => 
+      setSpotAvailability(token, availability)
+    )
+  );
+  
+  const successful = results
+    .filter(result => result.status === 'fulfilled')
+    .map(result => result.value);
+    
+  const failed = results
+    .filter(result => result.status === 'rejected')
+    .map(result => result.reason);
+    
+  return { successful, failed };
+}
+```
+
+### Pagination Helper
+
+```javascript
+// Generic pagination helper for list endpoints
+async function paginatedFetch(endpoint, token, options = {}) {
+  const {
+    limit = 20,
+    offset = 0,
+    filters = {}
+  } = options;
+  
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    offset: offset.toString(),
+    ...filters
+  });
+  
+  const response = await fetch(`${endpoint}?${params}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  return await response.json();
+}
+
+// Usage
+const spots = await paginatedFetch('/api/parking-spots', token, {
+  limit: 10,
+  offset: 20,
+  filters: { owner_id: userId }
+});
+```
+
+## Error Handling Patterns
+
+### Comprehensive Error Handler
+
+```javascript
+class HarborParkingError extends Error {
+  constructor(message, status, details = null) {
+    super(message);
+    this.name = 'HarborParkingError';
+    this.status = status;
+    this.details = details;
+  }
+}
+
+async function apiRequest(endpoint, options = {}) {
+  try {
+    const response = await fetch(endpoint, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
+      ...options
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new HarborParkingError(
+        data.error || 'Request failed',
+        response.status,
+        data.details
+      );
+    }
+    
+    return data;
+  } catch (error) {
+    if (error instanceof HarborParkingError) {
+      throw error;
+    }
+    
+    // Network or other errors
+    throw new HarborParkingError(
+      'Network error or unexpected response',
+      0,
+      { originalError: error.message }
+    );
+  }
+}
+
+// Usage with error handling
+try {
+  const profile = await apiRequest('/api/profile', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+} catch (error) {
+  if (error instanceof HarborParkingError) {
+    switch (error.status) {
+      case 401:
+        redirectToLogin();
+        break;
+      case 403:
+        showPendingApprovalMessage();
+        break;
+      case 404:
+        showProfileNotFoundError();
+        break;
+      default:
+        showGenericError(error.message);
+    }
+  } else {
+    showNetworkError();
+  }
+}
+```
+
+### Retry Logic with Exponential Backoff
+
+```javascript
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (attempt === maxRetries || error.status < 500) {
+        throw error;
+      }
+      
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
+// Usage
+const dashboard = await retryWithBackoff(() => 
+  apiRequest('/api/dashboard', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+);
+```
+
+## Mobile App Integration
+
+### React Native Example
+
+```javascript
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+class HarborParkingAPI {
+  constructor() {
+    this.baseURL = 'https://harbor-parking.vercel.app/api';
+    this.token = null;
+  }
+  
+  async initialize() {
+    this.token = await AsyncStorage.getItem('harbor_token');
+  }
+  
+  async setToken(token) {
+    this.token = token;
+    await AsyncStorage.setItem('harbor_token', token);
+  }
+  
+  async request(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(this.token && { 'Authorization': `Bearer ${this.token}` }),
+      ...options.headers
+    };
+    
+    const response = await fetch(url, {
+      ...options,
+      headers
+    });
+    
+    return await response.json();
+  }
+  
+  async getDashboard() {
+    return this.request('/dashboard');
+  }
+  
+  async claimSpot(availabilityId, notes) {
+    return this.request('/claims', {
+      method: 'POST',
+      body: JSON.stringify({
+        availability_id: availabilityId,
+        notes
+      })
+    });
+  }
+}
+
+// Usage in React Native component
+const api = new HarborParkingAPI();
+
+export function DashboardScreen() {
+  const [dashboard, setDashboard] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        await api.initialize();
+        const data = await api.getDashboard();
+        setDashboard(data);
+      } catch (error) {
+        console.error('Failed to load dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadDashboard();
+  }, []);
+  
+  if (loading) return <LoadingScreen />;
+  
+  return <DashboardView data={dashboard} />;
+}
+```
+
+## Integration Testing
+
+### Test Utilities
+
+```javascript
+// Test helper for API integration
+export class TestHelper {
+  constructor(baseURL = 'http://localhost:3000/api') {
+    this.baseURL = baseURL;
+    this.testUsers = [];
+  }
+  
+  async createTestUser(userData = {}) {
+    const defaultData = {
+      email: `test-${Date.now()}@example.com`,
+      password: 'TestPassword123!',
+      apartment_number: `${Math.floor(Math.random() * 100)}A`
+    };
+    
+    const user = { ...defaultData, ...userData };
+    
+    // Create user via Supabase Auth
+    const authResponse = await this.supabase.auth.signUp(user);
+    
+    if (authResponse.error) {
+      throw new Error(`Failed to create test user: ${authResponse.error.message}`);
+    }
+    
+    this.testUsers.push(authResponse.data.user);
+    return authResponse.data.user;
+  }
+  
+  async cleanup() {
+    // Clean up test users and data
+    for (const user of this.testUsers) {
+      await this.supabase.auth.admin.deleteUser(user.id);
+    }
+    this.testUsers = [];
+  }
+}
+
+// Example integration test
+describe('Parking Spot Workflow', () => {
+  let testHelper;
+  let user;
+  let token;
+  
+  beforeEach(async () => {
+    testHelper = new TestHelper();
+    user = await testHelper.createTestUser();
+    token = user.access_token;
+  });
+  
+  afterEach(async () => {
+    await testHelper.cleanup();
+  });
+  
+  test('complete spot sharing workflow', async () => {
+    // 1. Register a parking spot
+    const spot = await apiRequest('/parking-spots', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        spot_number: 'TEST-1',
+        location: 'Test Garage'
+      })
+    });
+    
+    expect(spot.spot_number).toBe('TEST-1');
+    
+    // 2. Set availability
+    const availability = await apiRequest('/availabilities', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        spot_id: spot.id,
+        start_time: new Date(Date.now() + 86400000).toISOString(),
+        end_time: new Date(Date.now() + 172800000).toISOString()
+      })
+    });
+    
+    expect(availability.spot_id).toBe(spot.id);
+    
+    // 3. Create second user to claim spot
+    const claimerUser = await testHelper.createTestUser();
+    
+    const claim = await apiRequest('/claims', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${claimerUser.access_token}` },
+      body: JSON.stringify({
+        availability_id: availability.id,
+        notes: 'Test claim'
+      })
+    });
+    
+    expect(claim.status).toBe('pending');
+  });
+});
+```
+
+This comprehensive guide covers the most common patterns you'll need when integrating with Harbor Parking API. Each pattern includes error handling, security considerations, and real-world usage examples.

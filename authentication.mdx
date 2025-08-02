@@ -1,0 +1,392 @@
+---
+title: 'Authentication'
+description: 'Learn how to authenticate with the Harbor Parking API using JWT tokens'
+---
+
+## Overview
+
+Harbor Parking uses **JWT (JSON Web Tokens)** for authentication, powered by Supabase Auth. All API endpoints require a valid JWT token except for public documentation endpoints.
+
+## Authentication Flow
+
+<Steps>
+  <Step title="User Registration">
+    Users sign up through the Harbor Parking web interface with their email and apartment details.
+  </Step>
+  <Step title="Email Verification">
+    Users verify their email address through the confirmation link sent to their inbox.
+  </Step>
+  <Step title="Admin Approval">
+    Building administrators review and approve new user accounts for security.
+  </Step>
+  <Step title="JWT Token">
+    Once approved, users can obtain JWT tokens through login or API authentication.
+  </Step>
+</Steps>
+
+## Getting Your JWT Token
+
+### Method 1: Web Interface (Recommended for Testing)
+
+1. **Sign up** at [https://harbor-parking.vercel.app/auth/signup](https://harbor-parking.vercel.app/auth/signup)
+2. **Verify your email** using the confirmation link
+3. **Wait for admin approval** - contact your building administrator
+4. **Log in** at [https://harbor-parking.vercel.app/auth/login](https://harbor-parking.vercel.app/auth/login)
+5. **Extract token** from browser storage or network requests
+
+### Method 2: Direct API Authentication
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST "https://YOUR_SUPABASE_URL/auth/v1/token?grant_type=password" \
+  -H "apikey: YOUR_SUPABASE_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "your.email@example.com",
+    "password": "your_password"
+  }'
+```
+
+```javascript JavaScript
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  'YOUR_SUPABASE_URL',
+  'YOUR_SUPABASE_ANON_KEY'
+)
+
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'your.email@example.com',
+  password: 'your_password'
+})
+
+if (data.session) {
+  const token = data.session.access_token
+  console.log('JWT Token:', token)
+}
+```
+
+```python Python
+import requests
+
+url = "https://YOUR_SUPABASE_URL/auth/v1/token?grant_type=password"
+headers = {
+    "apikey": "YOUR_SUPABASE_ANON_KEY",
+    "Content-Type": "application/json"
+}
+data = {
+    "email": "your.email@example.com",
+    "password": "your_password"
+}
+
+response = requests.post(url, headers=headers, json=data)
+auth_data = response.json()
+
+if "access_token" in auth_data:
+    token = auth_data["access_token"]
+    print(f"JWT Token: {token}")
+```
+
+</CodeGroup>
+
+## Using Your Token
+
+Once you have a JWT token, include it in the `Authorization` header for all API requests:
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET "https://harbor-parking.vercel.app/api/profile" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://harbor-parking.vercel.app/api/profile', {
+  headers: {
+    'Authorization': `Bearer ${yourJwtToken}`,
+    'Content-Type': 'application/json'
+  }
+});
+```
+
+```python Python
+import requests
+
+headers = {
+    'Authorization': f'Bearer {your_jwt_token}',
+    'Content-Type': 'application/json'
+}
+
+response = requests.get(
+    'https://harbor-parking.vercel.app/api/profile',
+    headers=headers
+)
+```
+
+</CodeGroup>
+
+## Token Properties
+
+Harbor Parking JWT tokens contain important user information:
+
+```json
+{
+  "aud": "authenticated",
+  "exp": 1640995200,
+  "sub": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "john.doe@example.com",
+  "phone": "",
+  "app_metadata": {
+    "provider": "email",
+    "providers": ["email"]
+  },
+  "user_metadata": {
+    "email": "john.doe@example.com"
+  },
+  "role": "authenticated",
+  "session_id": "456e7890-e89b-12d3-a456-426614174001"
+}
+```
+
+Key fields:
+- **`sub`** - User ID (UUID)
+- **`email`** - User's email address
+- **`exp`** - Token expiration timestamp
+- **`aud`** - Audience ("authenticated")
+
+## Token Expiration & Refresh
+
+JWT tokens expire after **1 hour** for security. Handle token refresh gracefully:
+
+<CodeGroup>
+
+```javascript JavaScript
+// Check if token is expired
+function isTokenExpired(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return true;
+  }
+}
+
+// Refresh token automatically
+async function makeAuthenticatedRequest(url, options = {}) {
+  let token = getStoredToken();
+  
+  if (isTokenExpired(token)) {
+    const { data } = await supabase.auth.refreshSession();
+    token = data.session?.access_token;
+    storeToken(token);
+  }
+  
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    }
+  });
+}
+```
+
+```python Python
+import jwt
+import time
+import requests
+from datetime import datetime
+
+def is_token_expired(token):
+    try:
+        payload = jwt.decode(token, options={"verify_signature": False})
+        return datetime.now().timestamp() >= payload['exp']
+    except:
+        return True
+
+def make_authenticated_request(url, headers=None, **kwargs):
+    token = get_stored_token()
+    
+    if is_token_expired(token):
+        # Refresh token logic here
+        token = refresh_token()
+        store_token(token)
+    
+    if headers is None:
+        headers = {}
+    
+    headers['Authorization'] = f'Bearer {token}'
+    return requests.request(url=url, headers=headers, **kwargs)
+```
+
+</CodeGroup>
+
+## User Roles & Permissions
+
+Harbor Parking supports different user roles with varying permissions:
+
+### Regular User
+- **Profile**: View and update own profile
+- **Parking Spots**: Register, update, delete own spots
+- **Availability**: Create availability for own spots
+- **Claims**: View and create claims, update own claims
+
+### Building Admin
+- **User Management**: Approve/reject user registrations
+- **Spot Verification**: Verify parking spot ownership
+- **Claims**: View and manage all claims in the building
+- **Reports**: Access usage analytics and reports
+
+### Super Admin
+- **System Management**: Full access to all endpoints
+- **Multi-building**: Manage multiple buildings
+- **Configuration**: System-wide settings and policies
+
+## Error Responses
+
+Common authentication errors:
+
+<AccordionGroup>
+
+<Accordion title="401 Unauthorized - Missing Token">
+```json
+{
+  "error": "Authentication required"
+}
+```
+
+**Cause**: No `Authorization` header provided  
+**Solution**: Include `Authorization: Bearer YOUR_TOKEN` in request headers
+</Accordion>
+
+<Accordion title="401 Unauthorized - Invalid Token">
+```json
+{
+  "error": "Invalid token"
+}
+```
+
+**Cause**: Token is malformed, expired, or invalid  
+**Solution**: Refresh your token or re-authenticate
+</Accordion>
+
+<Accordion title="403 Forbidden - Insufficient Permissions">
+```json
+{
+  "error": "You do not have permission to perform this action"
+}
+```
+
+**Cause**: User lacks required role/permissions  
+**Solution**: Ensure your account has appropriate permissions
+</Accordion>
+
+<Accordion title="403 Forbidden - Account Not Approved">
+```json
+{
+  "error": "Account pending approval"
+}
+```
+
+**Cause**: User account hasn't been approved by building admin  
+**Solution**: Contact your building administrator for approval
+</Accordion>
+
+</AccordionGroup>
+
+## Security Best Practices
+
+<Tip>
+**Keep your tokens secure!** Treat JWT tokens like passwords and follow these best practices:
+</Tip>
+
+### Client-Side Security
+- **Never expose tokens** in URLs, logs, or client-side code
+- **Store securely** using httpOnly cookies or secure storage
+- **Use HTTPS** for all API requests in production
+- **Implement token refresh** to handle expiration gracefully
+- **Clear tokens** on logout or when switching users
+
+### Server-Side Security
+- **Validate tokens** on every request
+- **Check user permissions** before processing requests
+- **Log authentication events** for security monitoring
+- **Rate limit** authentication endpoints
+- **Monitor for suspicious activity**
+
+### Development vs Production
+
+<CodeGroup>
+
+```javascript Development
+// Development - Store in localStorage (easier debugging)
+localStorage.setItem('harbor_token', token);
+const token = localStorage.getItem('harbor_token');
+```
+
+```javascript Production
+// Production - Use httpOnly cookies or secure storage
+// Set secure, httpOnly cookie via server
+document.cookie = `harbor_token=${token}; Secure; HttpOnly; SameSite=Strict`;
+
+// Or use secure storage libraries
+import { SecureStore } from 'expo-secure-store';
+await SecureStore.setItemAsync('harbor_token', token);
+```
+
+</CodeGroup>
+
+## Testing Authentication
+
+Use these test credentials for development (if available):
+
+```bash
+# Test User
+Email: test.user@example.com
+Password: TestPassword123!
+
+# Test Admin  
+Email: admin@example.com
+Password: AdminPassword123!
+```
+
+<Warning>
+Test credentials are only available in development environments. Production requires real user registration and admin approval.
+</Warning>
+
+## Next Steps
+
+Now that you understand authentication, explore:
+
+<CardGroup cols={2}>
+  <Card
+    title="Core Concepts"
+    icon="lightbulb"
+    href="/concepts/users"
+  >
+    Learn about users, roles, and permissions
+  </Card>
+  <Card
+    title="API Reference" 
+    icon="book"
+    href="/api-reference/introduction"
+  >
+    Complete endpoint documentation
+  </Card>
+  <Card
+    title="Error Handling"
+    icon="triangle-exclamation"
+    href="/guides/errors"
+  >
+    Handle errors and edge cases gracefully
+  </Card>
+  <Card
+    title="Code Examples"
+    icon="code"
+    href="/examples/common-workflows"
+  >
+    Real-world authentication patterns
+  </Card>
+</CardGroup>

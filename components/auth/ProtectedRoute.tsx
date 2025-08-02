@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
   requireAuth?: boolean
   requireApproval?: boolean
   requireAdmin?: boolean
+  adminOnly?: boolean
   fallbackUrl?: string
 }
 
@@ -17,6 +18,7 @@ export function ProtectedRoute({
   requireAuth = true,
   requireApproval = false,
   requireAdmin = false,
+  adminOnly = false,
   fallbackUrl = '/',
 }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth()
@@ -38,11 +40,11 @@ export function ProtectedRoute({
     }
 
     // Check admin requirement
-    if (requireAdmin && (!profile || !profile.is_admin)) {
-      router.push('/unauthorized')
+    if ((requireAdmin || adminOnly) && (!profile || !profile.is_admin)) {
+      router.push('/dashboard')
       return
     }
-  }, [user, profile, loading, requireAuth, requireApproval, requireAdmin, fallbackUrl, router])
+  }, [user, profile, loading, requireAuth, requireApproval, requireAdmin, adminOnly, fallbackUrl, router])
 
   // Show loading state
   if (loading) {
@@ -56,7 +58,7 @@ export function ProtectedRoute({
   // Don't render if auth requirements not met
   if (requireAuth && !user) return null
   if (requireApproval && (!profile || !profile.is_approved)) return null
-  if (requireAdmin && (!profile || !profile.is_admin)) return null
+  if ((requireAdmin || adminOnly) && (!profile || !profile.is_admin)) return null
 
   return <>{children}</>
 }

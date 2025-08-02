@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase/singleton'
 
 export default function ResetPassword() {
@@ -13,7 +13,6 @@ export default function ResetPassword() {
   const [validSession, setValidSession] = useState(false)
   
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = getSupabaseClient()
 
   useEffect(() => {

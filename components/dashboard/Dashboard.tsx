@@ -16,8 +16,15 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
   const [showClaimModal, setShowClaimModal] = useState(false)
+  const [showAddSpotForm, setShowAddSpotForm] = useState(false)
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null)
   const [selectedAvailability, setSelectedAvailability] = useState<AvailabilityWithSpot | null>(null)
+  const [newSpotData, setNewSpotData] = useState({
+    spotNumber: '',
+    nearestElevator: '',
+  })
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const supabase = getSupabaseClient()
 
@@ -30,15 +37,31 @@ export function Dashboard() {
         .from('parking_spots')
         .select('*')
         .eq('owner_id', user.id)
+        .order('spot_number', { ascending: true })
 
       setMySpots(spots || [])
 
-      // Try to fetch available spots with simplified query
+      // Try to fetch available spots with proper joins
       const { data: available } = await supabase
         .from('availabilities')
-        .select('*')
+        .select(`
+          *,
+          parking_spots!inner (
+            id,
+            spot_number,
+            building_section,
+            owner_id,
+            profiles!inner (
+              id,
+              full_name,
+              apartment_number
+            )
+          )
+        `)
         .eq('is_active', true)
         .gt('end_time', new Date().toISOString())
+        .neq('parking_spots.owner_id', user.id)
+        .order('start_time', { ascending: true })
 
       setAvailableSpots(available || [])
 
@@ -71,6 +94,48 @@ export function Dashboard() {
   const handleClaimSpot = (availability: AvailabilityWithSpot) => {
     setSelectedAvailability(availability)
     setShowClaimModal(true)
+  }
+
+  const handleAddSpot = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user || !profile?.is_approved) return
+
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const { data, error } = await supabase
+        .from('parking_spots')
+        .insert({
+          owner_id: user.id,
+          spot_number: newSpotData.spotNumber,
+          building_section: newSpotData.nearestElevator,
+          is_verified: false,
+        })
+        .select()
+
+      if (error) {
+        console.error('Database error:', error)
+        if (error.code === '23505') {
+          setError('A parking spot with this number already exists. Please use a different spot number.')
+        } else {
+          setError(`Failed to add parking spot: ${error.message}`)
+        }
+        return
+      }
+
+      // Reset form and refresh data
+      setNewSpotData({ spotNumber: '', nearestElevator: '' })
+      setSuccess('Parking spot added successfully!')
+      setTimeout(() => {
+        setShowAddSpotForm(false)
+        setSuccess(null)
+      }, 1500)
+      fetchData()
+    } catch (err) {
+      console.error('Failed to add spot:', err)
+      setError('An unexpected error occurred. Please try again.')
+    }
   }
 
   const getClaimStatusColor = (status: string) => {
@@ -172,7 +237,12 @@ export function Dashboard() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-white">My Parking Spots</h2>
             <button 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              onClick={() => {
+                setShowAddSpotForm(true)
+                setError(null)
+                setSuccess(null)
+              }}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               disabled={!profile?.is_approved}
             >
               Add New Spot
@@ -183,6 +253,11 @@ export function Dashboard() {
             <div className="text-center py-8">
               <p className="text-gray-400 mb-4">No parking spots registered yet</p>
               <button 
+                onClick={() => {
+                  setShowAddSpotForm(true)
+                  setError(null)
+                  setSuccess(null)
+                }}
                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 disabled={!profile?.is_approved}
               >
@@ -207,9 +282,9 @@ export function Dashboard() {
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-white">Available Spots</h2>
-            <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-              Browse All
-            </button>
+            <span className="text-sm text-gray-400">
+              {availableSpots.length} spots available
+            </span>
           </div>
           
           {availableSpots.length === 0 ? (
@@ -218,7 +293,7 @@ export function Dashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availableSpots.slice(0, 6).map((availability) => (
+              {availableSpots.map((availability) => (
                 <ParkingSpotCard
                   key={availability.id}
                   availability={availability}
@@ -288,6 +363,97 @@ export function Dashboard() {
             setSelectedAvailability(null)
           }}
         />
+      )}
+
+      {/* Add Spot Modal */}
+      {showAddSpotForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md border border-gray-700">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">Add New Parking Spot</h2>
+              <button
+                onClick={() => {
+                  setShowAddSpotForm(false)
+                  setError(null)
+                  setSuccess(null)
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-900 bg-opacity-50 border border-red-700 rounded-md">
+                <p className="text-red-200 text-sm">{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="mb-4 p-3 bg-green-900 bg-opacity-50 border border-green-700 rounded-md">
+                <p className="text-green-200 text-sm">{success}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleAddSpot} className="space-y-4">
+              <div>
+                <label htmlFor="spotNumber" className="block text-sm font-medium text-gray-200 mb-1">
+                  Parking Spot Number *
+                </label>
+                <input
+                  id="spotNumber"
+                  type="text"
+                  value={newSpotData.spotNumber}
+                  onChange={(e) => setNewSpotData(prev => ({ ...prev, spotNumber: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., 42, A15, Garage-5"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="nearestElevator" className="block text-sm font-medium text-gray-200 mb-1">
+                  Nearest Elevator *
+                </label>
+                <select
+                  id="nearestElevator"
+                  value={newSpotData.nearestElevator}
+                  onChange={(e) => setNewSpotData(prev => ({ ...prev, nearestElevator: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select nearest elevator</option>
+                  <option value="Elevator 1">Elevator 1</option>
+                  <option value="Elevator 2">Elevator 2</option>
+                  <option value="Elevator 3">Elevator 3</option>
+                  <option value="Elevator 4">Elevator 4</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                >
+                  Add Parking Spot
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddSpotForm(false)
+                    setError(null)
+                    setSuccess(null)
+                  }}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )

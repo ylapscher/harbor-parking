@@ -1,0 +1,50 @@
+name: Deploy Mintlify Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mint.json'
+      - '**/*.mdx'
+      - 'openapi.yaml'
+      - 'openapi.json'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'mint.json'
+      - '**/*.mdx'
+      - 'openapi.yaml'
+      - 'openapi.json'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Mintlify CLI
+        run: npm install -g mintlify
+
+      - name: Validate Mintlify Configuration
+        run: mintlify dev --check
+
+      - name: Deploy to Mintlify
+        if: github.ref == 'refs/heads/main'
+        run: mintlify deploy
+        env:
+          MINTLIFY_API_KEY: ${{ secrets.MINTLIFY_API_KEY }}
+
+      - name: Preview Documentation (PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Documentation preview would be generated here"
+          echo "Add Mintlify preview deployment if available"

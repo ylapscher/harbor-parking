@@ -47,18 +47,6 @@ export function Navigation() {
               >
                 Dashboard
               </button>
-              <button
-                onClick={() => router.push('/spots')}
-                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Browse Spots
-              </button>
-              <button
-                onClick={() => router.push('/my-spots')}
-                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                My Spots
-              </button>
               {profile?.is_admin && (
                 <button
                   onClick={() => router.push('/admin')}
@@ -129,24 +117,6 @@ export function Navigation() {
                 className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors"
               >
                 Dashboard
-              </button>
-              <button
-                onClick={() => {
-                  router.push('/spots')
-                  setIsMenuOpen(false)
-                }}
-                className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors"
-              >
-                Browse Spots
-              </button>
-              <button
-                onClick={() => {
-                  router.push('/my-spots')
-                  setIsMenuOpen(false)
-                }}
-                className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors"
-              >
-                My Spots
               </button>
               {profile?.is_admin && (
                 <button

@@ -8,9 +8,7 @@ const CreateClaimSchema = z.object({
 })
 
 const UpdateClaimSchema = z.object({
-  status: z.enum(['pending', 'confirmed', 'expired', 'cancelled'], {
-    errorMap: () => ({ message: 'Status must be one of: pending, confirmed, expired, cancelled' })
-  }).optional(),
+  status: z.enum(['pending', 'confirmed', 'expired', 'cancelled']).optional(),
   notes: z.string().optional(),
 })
 

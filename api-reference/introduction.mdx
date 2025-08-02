@@ -1,0 +1,265 @@
+---
+title: 'API Reference'
+description: 'Complete Harbor Parking REST API documentation with interactive examples'
+---
+
+## Welcome to Harbor Parking API
+
+Our REST API enables developers to integrate parking spot sharing functionality into any application. Built with modern standards and developer experience in mind.
+
+## Base URL
+
+All API requests should be made to:
+
+```
+https://harbor-parking.vercel.app/api
+```
+
+For local development:
+```
+http://localhost:3000/api
+```
+
+## Authentication
+
+All endpoints require JWT authentication except where noted. Include your token in the Authorization header:
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+<Card title="Get Started with Authentication" icon="key" href="/authentication">
+  Learn how to obtain and use JWT tokens for API access
+</Card>
+
+## Request/Response Format
+
+### Content Type
+All requests and responses use JSON:
+```
+Content-Type: application/json
+```
+
+### Request Format
+```bash
+curl -X POST "https://harbor-parking.vercel.app/api/parking-spots" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "spot_number": "A-15",
+    "location": "Level 2 Parking Garage"
+  }'
+```
+
+### Response Format
+```json
+{
+  "spot": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "spot_number": "A-15",
+    "owner_id": "456e7890-e89b-12d3-a456-426614174001",
+    "building_section": "Level 2 Parking Garage",
+    "is_verified": false,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+## HTTP Status Codes
+
+The API uses standard HTTP status codes:
+
+<AccordionGroup>
+  <Accordion title="2xx Success">
+    - **200 OK** - Request successful
+    - **201 Created** - Resource created successfully
+  </Accordion>
+  
+  <Accordion title="4xx Client Errors">
+    - **400 Bad Request** - Invalid request data or validation errors
+    - **401 Unauthorized** - Missing or invalid authentication token
+    - **403 Forbidden** - Insufficient permissions or account not approved
+    - **404 Not Found** - Resource not found
+    - **409 Conflict** - Resource already exists or conflicts with existing data
+  </Accordion>
+  
+  <Accordion title="5xx Server Errors">
+    - **500 Internal Server Error** - Unexpected server error
+  </Accordion>
+</AccordionGroup>
+
+## Error Response Format
+
+All errors follow a consistent format:
+
+```json
+{
+  "error": "Validation failed",
+  "details": {
+    "spot_number": {
+      "_errors": ["Spot number is required"]
+    }
+  }
+}
+```
+
+<Card title="Error Handling Guide" icon="triangle-exclamation" href="/guides/errors">
+  Learn how to handle different error scenarios gracefully
+</Card>
+
+## Rate Limiting
+
+API requests are rate limited to ensure fair usage:
+
+- **100 requests per minute** per authenticated user
+- **1000 requests per hour** per authenticated user
+- Rate limit headers included in responses:
+
+```http
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1640995200
+```
+
+## API Endpoints Overview
+
+### Profile & Authentication
+Manage user profiles and authentication
+
+<CardGroup cols={2}>
+  <Card title="Get Profile" icon="user" href="/api-reference/profile/get-profile">
+    Retrieve authenticated user's profile
+  </Card>
+  <Card title="Update Profile" icon="user-pen" href="/api-reference/profile/update-profile">
+    Update user profile information
+  </Card>
+</CardGroup>
+
+### Dashboard
+Get comprehensive dashboard data
+
+<Card title="Get Dashboard" icon="gauge-high" href="/api-reference/dashboard/get-dashboard">
+  Retrieve user dashboard with stats, spots, and claims
+</Card>
+
+### Parking Spots
+Manage parking spot registration and ownership
+
+<CardGroup cols={2}>
+  <Card title="List Spots" icon="list" href="/api-reference/parking-spots/list-spots">
+    Get parking spots with filtering
+  </Card>
+  <Card title="Create Spot" icon="plus" href="/api-reference/parking-spots/create-spot">
+    Register a new parking spot
+  </Card>
+  <Card title="Update Spot" icon="pen" href="/api-reference/parking-spots/update-spot">
+    Update parking spot details
+  </Card>
+  <Card title="Delete Spot" icon="trash" href="/api-reference/parking-spots/delete-spot">
+    Remove a parking spot
+  </Card>
+</CardGroup>
+
+### Availabilities
+Manage parking spot availability windows
+
+<CardGroup cols={2}>
+  <Card title="List Availabilities" icon="list" href="/api-reference/availabilities/list-availabilities">
+    Get availability windows with filtering
+  </Card>
+  <Card title="Create Availability" icon="plus" href="/api-reference/availabilities/create-availability">
+    Set spot availability window
+  </Card>
+  <Card title="Update Availability" icon="pen" href="/api-reference/availabilities/update-availability">
+    Modify availability details
+  </Card>
+  <Card title="Delete Availability" icon="trash" href="/api-reference/availabilities/delete-availability">
+    Remove availability window
+  </Card>
+</CardGroup>
+
+### Claims
+Manage parking spot reservations
+
+<CardGroup cols={2}>
+  <Card title="List Claims" icon="list" href="/api-reference/claims/list-claims">
+    Get claims with filtering options
+  </Card>
+  <Card title="Create Claim" icon="plus" href="/api-reference/claims/create-claim">
+    Claim an available parking spot
+  </Card>
+  <Card title="Update Claim" icon="pen" href="/api-reference/claims/update-claim">
+    Update claim status or details
+  </Card>
+  <Card title="Delete Claim" icon="trash" href="/api-reference/claims/delete-claim">
+    Cancel a parking spot claim
+  </Card>
+</CardGroup>
+
+## OpenAPI Specification
+
+Complete machine-readable API specification available in multiple formats:
+
+<CardGroup cols={3}>
+  <Card title="JSON Format" icon="code" href="/openapi.json">
+    OpenAPI 3.0 specification in JSON
+  </Card>
+  <Card title="YAML Format" icon="file-code" href="/openapi.yaml">
+    OpenAPI 3.0 specification in YAML
+  </Card>
+  <Card title="TypeScript Types" icon="code" href="/types/api.ts">
+    Generated TypeScript type definitions
+  </Card>
+</CardGroup>
+
+## SDKs & Code Generation
+
+Generate client libraries from our OpenAPI specification:
+
+<CardGroup cols={2}>
+  <Card title="JavaScript/TypeScript" icon="js" href="/sdks/javascript">
+    Official JavaScript/TypeScript SDK
+  </Card>
+  <Card title="Python" icon="python" href="/sdks/python">
+    Python client library examples
+  </Card>
+</CardGroup>
+
+## Interactive Playground
+
+Try API endpoints directly in your browser with live data:
+
+<Note>
+The interactive playground requires a valid JWT token. Obtain one by logging into the Harbor Parking web application.
+</Note>
+
+## Webhooks (Coming Soon)
+
+Real-time notifications for parking events:
+
+- New spot registrations
+- Availability changes
+- Claim submissions and updates
+- Admin approvals
+
+<Card title="Webhook Documentation" icon="webhook" href="/guides/webhooks">
+  Learn about webhook setup and event handling
+</Card>
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Get up and running in 5 minutes
+  </Card>
+  <Card title="Code Examples" icon="code" href="/examples/common-workflows">
+    Real-world integration patterns
+  </Card>
+  <Card title="Community Support" icon="comments" href="https://github.com/ylapscher/harbor-parking/discussions">
+    Connect with other developers
+  </Card>
+  <Card title="Report Issues" icon="bug" href="https://github.com/ylapscher/harbor-parking/issues">
+    Bug reports and feature requests
+  </Card>
+</CardGroup>
