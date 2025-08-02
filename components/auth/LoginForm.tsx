@@ -12,8 +12,24 @@ export function LoginForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    const DEBUG = process.env.NEXT_PUBLIC_DEBUG === 'true'
+    const log = DEBUG ? console.log : () => {}
+    const logGroup = DEBUG ? console.group : () => {}
+    const logGroupEnd = DEBUG ? console.groupEnd : () => {}
+    const logTime = DEBUG ? console.time : () => {}
+    const logTimeEnd = DEBUG ? console.timeEnd : () => {}
+    
+    logGroup('🔐 Login attempt started')
+    log('Login details:', {
+      email: email.trim(),
+      hasPassword: !!password,
+      timestamp: new Date().toISOString()
+    })
+    
     if (!email || !password) {
+      log('❌ Missing credentials')
       setError('Please fill in both email and password')
+      logGroupEnd()
       return
     }
     
@@ -21,15 +37,14 @@ export function LoginForm() {
     setError('')
 
     try {
-      // Check if Supabase is properly configured
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        setError('Authentication service is not properly configured. Please contact support.')
-        return
-      }
-
       const supabase = getSupabaseClient()
+      log('✅ Supabase client created')
+      
+      logTime('⏱️ loginRequest')
+      log('🚀 Starting login request...')
       
       // Add timeout to prevent infinite loading
+      const loginStartTime = performance.now()
       const loginPromise = supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -40,6 +55,14 @@ export function LoginForm() {
       )
 
       const result = await Promise.race([loginPromise, timeoutPromise])
+      const loginEndTime = performance.now()
+      
+      logTimeEnd('⏱️ loginRequest')
+      log('📊 Login request timing:', {
+        duration: `${(loginEndTime - loginStartTime).toFixed(2)}ms`,
+        timestamp: new Date().toISOString()
+      })
+      
       const { data, error } = result as { data: { user: unknown } | null; error: { message?: string } | null }
 
       if (error) {

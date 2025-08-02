@@ -25,19 +25,37 @@ export function ProtectedRoute({
   const router = useRouter()
 
   useEffect(() => {
-    if (loading) return
+    const DEBUG = process.env.NEXT_PUBLIC_DEBUG === 'true'
+    const log = DEBUG ? console.log : () => {}
+    const logGroup = DEBUG ? console.group : () => {}
+    
+    if (loading) {
+      log('🔒 ProtectedRoute: Still loading, waiting...')
+      return
+    }
 
     // Check for recent login success in localStorage as fallback
     const recentLogin = localStorage.getItem('harbor-login-success')
     const userEmail = localStorage.getItem('harbor-user-email')
     const isRecentLogin = recentLogin && (Date.now() - parseInt(recentLogin)) < 300000 // 5 minutes
     
-    console.log('ProtectedRoute check:', { 
+    logGroup('🔒 ProtectedRoute evaluation')
+    log('Route requirements:', {
+      requireAuth,
+      requireApproval,
+      requireAdmin,
+      adminOnly,
+      fallbackUrl
+    })
+    log('Current state:', { 
       user: !!user, 
       profile: !!profile, 
       loading, 
       isRecentLogin,
-      userEmail 
+      userEmail,
+      isApproved: profile?.is_approved,
+      isAdmin: profile?.is_admin,
+      timestamp: new Date().toISOString()
     })
 
     // If we have a recent login but no user (Supabase timeout), allow access

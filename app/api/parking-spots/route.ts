@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
+import { getHttpStatusFromSupabaseError, formatSupabaseError } from '@/lib/utils/supabase-errors'
 
 const CreateParkingSpotSchema = z.object({
   spot_number: z.string().min(1, 'Spot number is required'),
@@ -15,7 +16,7 @@ const UpdateParkingSpotSchema = z.object({
 })
 
 async function getAuthenticatedUser(request: NextRequest) {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseAdmin()
   
   // Get the authorization header
   const authHeader = request.headers.get('authorization')
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
     const { searchParams } = new URL(request.url)
     const ownerId = searchParams.get('owner_id')
 
@@ -65,10 +66,11 @@ export async function GET(request: NextRequest) {
 
     const { data: spots, error } = await query
 
-    if (error) {
+if (error) {
+      console.error('Error fetching parking spots:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch parking spots' },
-        { status: 500 }
+        { error: formatSupabaseError(error) },
+        { status: getHttpStatusFromSupabaseError(error) }
       )
     }
 
@@ -106,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { spot_number, location } = validationResult.data
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Check if spot number already exists for this user
     const { data: existingSpot } = await supabase
@@ -134,10 +136,11 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (error) {
+if (error) {
+      console.error('Error creating parking spot:', error)
       return NextResponse.json(
-        { error: 'Failed to create parking spot' },
-        { status: 500 }
+        { error: formatSupabaseError(error) },
+        { status: getHttpStatusFromSupabaseError(error) }
       )
     }
 
@@ -183,7 +186,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Check if spot exists and user owns it
     const { data: existingSpot } = await supabase
@@ -219,10 +222,11 @@ export async function PUT(request: NextRequest) {
       .select()
       .single()
 
-    if (error) {
+if (error) {
+      console.error('Error updating parking spot:', error)
       return NextResponse.json(
-        { error: 'Failed to update parking spot' },
-        { status: 500 }
+        { error: formatSupabaseError(error) },
+        { status: getHttpStatusFromSupabaseError(error) }
       )
     }
 
@@ -256,7 +260,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Check if spot exists and user owns it
     const { data: existingSpot } = await supabase
@@ -286,10 +290,11 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id)
       .eq('owner_id', user.id)
 
-    if (error) {
+if (error) {
+      console.error('Error deleting parking spot:', error)
       return NextResponse.json(
-        { error: 'Failed to delete parking spot' },
-        { status: 500 }
+        { error: formatSupabaseError(error) },
+        { status: getHttpStatusFromSupabaseError(error) }
       )
     }
 

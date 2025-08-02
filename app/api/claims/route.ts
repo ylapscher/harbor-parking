@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 const CreateClaimSchema = z.object({
@@ -13,7 +13,7 @@ const UpdateClaimSchema = z.object({
 })
 
 async function getAuthenticatedUser(request: NextRequest) {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseAdmin()
   
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
     const { searchParams } = new URL(request.url)
     
     const claimerId = searchParams.get('claimer_id')
@@ -72,10 +72,11 @@ export async function GET(request: NextRequest) {
 
     const { data: claims, error } = await query
 
-    if (error) {
+if (error) {
+      console.error('Error fetching claims:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch claims' },
-        { status: 500 }
+        { error: error.message || 'Failed to fetch claims' },
+        { status: error.code === '42501' ? 403 : 500 }
       )
     }
 
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { availability_id, notes } = validationResult.data
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Check if availability exists and is still active
     const { data: availability } = await supabase
@@ -194,10 +195,11 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (error) {
+if (error) {
+      console.error('Error creating claim:', error)
       return NextResponse.json(
-        { error: 'Failed to create claim' },
-        { status: 500 }
+        { error: error.message || 'Failed to create claim' },
+        { status: error.code === '42501' ? 403 : error.code === '23505' ? 409 : 500 }
       )
     }
 
@@ -243,7 +245,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Check if claim exists and get related data
     const { data: claim } = await supabase
@@ -314,10 +316,11 @@ export async function PUT(request: NextRequest) {
       .select()
       .single()
 
-    if (error) {
+if (error) {
+      console.error('Error updating claim:', error)
       return NextResponse.json(
-        { error: 'Failed to update claim' },
-        { status: 500 }
+        { error: error.message || 'Failed to update claim' },
+        { status: error.code === '42501' ? 403 : error.code === '23505' ? 409 : 500 }
       )
     }
 
@@ -351,7 +354,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Check if claim exists and get related data
     const { data: claim } = await supabase
@@ -390,10 +393,11 @@ export async function DELETE(request: NextRequest) {
       .delete()
       .eq('id', id)
 
-    if (error) {
+if (error) {
+      console.error('Error deleting claim:', error)
       return NextResponse.json(
-        { error: 'Failed to delete claim' },
-        { status: 500 }
+        { error: error.message || 'Failed to delete claim' },
+        { status: error.code === '42501' ? 403 : 500 }
       )
     }
 

@@ -46,6 +46,14 @@ export function AvailabilityToggle({
     setLoading(true)
     setError('')
 
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+
+    if (!token) {
+      window.location.href = '/login'
+      return
+    }
+
     try {
       // Validate times
       const startDate = new Date(formData.startTime)
@@ -63,31 +71,46 @@ export function AvailabilityToggle({
 
       if (currentAvailability) {
         // Update existing availability
-        const { error } = await supabase
-          .from('availabilities')
-          .update({
+        const response = await fetch('/api/availabilities', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            id: currentAvailability.id,
             start_time: formData.startTime,
             end_time: formData.endTime,
-            notes: formData.notes || null,
-            is_active: formData.isActive,
-            updated_at: new Date().toISOString()
+            notes: formData.notes,
+            is_active: formData.isActive
           })
-          .eq('id', currentAvailability.id)
+        })
 
-        if (error) throw error
+if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to update availability')
+        }
       } else {
         // Create new availability
-        const { error } = await supabase
-          .from('availabilities')
-          .insert({
+        const response = await fetch('/api/availabilities', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
             spot_id: spotId,
             start_time: formData.startTime,
             end_time: formData.endTime,
-            notes: formData.notes || null,
+            notes: formData.notes,
             is_active: formData.isActive
           })
+        })
 
-        if (error) throw error
+if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to create availability')
+        }
       }
 
       onUpdate?.()
@@ -103,13 +126,31 @@ export function AvailabilityToggle({
     if (!currentAvailability) return
     
     setLoading(true)
-    try {
-      const { error } = await supabase
-        .from('availabilities')
-        .update({ is_active: false, updated_at: new Date().toISOString() })
-        .eq('id', currentAvailability.id)
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
 
-      if (error) throw error
+    if (!token) {
+      window.location.href = '/login'
+      return
+    }
+
+    try {
+      const response = await fetch('/api/availabilities', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: currentAvailability.id,
+          is_active: false
+        })
+      })
+
+if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to deactivate availability')
+      }
       onUpdate?.()
       onClose?.()
     } catch (err: unknown) {

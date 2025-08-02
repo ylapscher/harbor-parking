@@ -15,3 +15,26 @@
  ✓ Compiled / in 2.5s
 ⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
  GET / 200 in 2826ms
+   Reload env: .env.local
+   Reload env: .env.local
+ ✓ Compiled middleware in 9ms
+ ✓ Compiled in 888ms
+   Reload env: .env.local
+ ✓ Compiled middleware in 11ms
+ ✓ Compiled in 49ms
+   Reload env: .env.local
+ ✓ Compiled middleware in 37ms
+ ✓ Compiled in 1255ms
+   Reload env: .env.local
+ ✓ Compiled middleware in 32ms
+ ✓ Compiled in 1023ms
+   Reload env: .env.local
+ ✓ Compiled middleware in 17ms
+ ✓ Compiled in 837ms
+ ✓ Compiled middleware in 5ms
+ ✓ Compiled in 38ms
+ ✓ Compiled middleware in 8ms
+ ✓ Compiled in 88ms
+ ✓ Compiled middleware in 10ms
+ ✓ Compiled in 66ms
+[?25h

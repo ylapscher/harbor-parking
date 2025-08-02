@@ -45,6 +45,14 @@ export function SpotClaimModal({ availability, onClaim, onClose }: SpotClaimModa
     setLoading(true)
     setError('')
 
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+
+    if (!token) {
+      window.location.href = '/login'
+      return
+    }
+
     try {
       // Check if availability is still active and not expired
       const now = new Date()
@@ -60,32 +68,22 @@ export function SpotClaimModal({ availability, onClaim, onClose }: SpotClaimModa
         return
       }
 
-      // Create claim with automatic expiration
-      const expiresAt = new Date(now.getTime() + (2 * 60 * 60 * 1000)) // 2 hours from now
-      
-      const { data: user } = await supabase.auth.getUser()
-      if (!user.user) {
-        setError('You must be logged in to claim a spot')
-        return
-      }
-
-      const { error: claimError } = await supabase
-        .from('claims')
-        .insert({
+      // Create claim
+      const response = await fetch('/api/claims', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
           availability_id: availability.id,
-          claimer_id: user.user.id,
-          status: 'pending',
-          expires_at: expiresAt.toISOString(),
-          notes: notes || null
+          notes: notes
         })
+      })
 
-      if (claimError) {
-        if (claimError.code === '23505') { // Unique constraint violation
-          setError('You have already claimed this spot')
-        } else {
-          throw claimError
-        }
-        return
+if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to claim spot')
       }
 
       onClaim?.()

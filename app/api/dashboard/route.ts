@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
 
 async function getAuthenticatedUser(request: NextRequest) {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseAdmin()
   
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Fetch user's parking spots with availability status
     const { data: mySpots, error: spotsError } = await supabase
@@ -140,12 +140,24 @@ export async function GET(request: NextRequest) {
       confirmedClaimsOnMySpots: claimsOnMySpots?.filter(c => c.status === 'confirmed').length || 0,
     }
 
-    // Handle errors but don't fail completely
+// Handle errors but don't fail completely
     const errors = []
-    if (spotsError) errors.push({ source: 'parking_spots', error: spotsError.message })
-    if (availableError) errors.push({ source: 'available_spots', error: availableError.message })
-    if (claimsError) errors.push({ source: 'my_claims', error: claimsError.message })
-    if (claimsOnSpotsError) errors.push({ source: 'claims_on_spots', error: claimsOnSpotsError.message })
+    if (spotsError) {
+      console.error('Error fetching parking spots:', spotsError)
+      errors.push({ source: 'parking_spots', error: spotsError.message })
+    }
+    if (availableError) {
+      console.error('Error fetching available spots:', availableError)
+      errors.push({ source: 'available_spots', error: availableError.message })
+    }
+    if (claimsError) {
+      console.error('Error fetching claims:', claimsError)
+      errors.push({ source: 'my_claims', error: claimsError.message })
+    }
+    if (claimsOnSpotsError) {
+      console.error('Error fetching claims on spots:', claimsOnSpotsError)
+      errors.push({ source: 'claims_on_spots', error: claimsOnSpotsError.message })
+    }
 
     return NextResponse.json({
       stats,

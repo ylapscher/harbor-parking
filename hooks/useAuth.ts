@@ -12,10 +12,35 @@ interface AuthState {
 }
 
 export function useAuth() {
+  // Check for development bypass immediately
+  const isDev = process.env.NODE_ENV === 'development'
+  const hasRecentLogin = typeof window !== 'undefined' && localStorage.getItem('harbor-login-success')
+  const userEmail = typeof window !== 'undefined' ? localStorage.getItem('harbor-user-email') : null
+  
   const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    profile: null,
-    loading: true,
+    user: isDev && hasRecentLogin ? {
+      id: 'dev-user-id',
+      email: userEmail || 'dev@example.com',
+      app_metadata: {},
+      user_metadata: {
+        full_name: 'Dev User',
+        apartment_number: '101',
+      },
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+    } as any : null,
+    profile: isDev && hasRecentLogin ? {
+      id: 'dev-user-id',
+      email: userEmail || 'dev@example.com',
+      full_name: 'Dev User',
+      apartment_number: '101',
+      phone_number: null,
+      is_approved: true,
+      is_admin: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as Profile : null,
+    loading: !(isDev && hasRecentLogin),
   })
 
   let supabase: ReturnType<typeof getSupabaseClient>
@@ -37,47 +62,130 @@ export function useAuth() {
 
   useEffect(() => {
     let mounted = true
+    const effectId = Math.random().toString(36).substr(2, 9)
     
-    console.log('useAuth: Starting initialization')
-    console.log('useAuth: Environment check', {
+    const DEBUG = process.env.NEXT_PUBLIC_DEBUG === 'true'
+    const log = DEBUG ? console.log : () => {}
+    const logGroup = DEBUG ? console.group : () => {}
+    const logGroupEnd = DEBUG ? console.groupEnd : () => {}
+    
+    // Check for dev mode bypass
+    const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true' && typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    
+    // Create unique timer names to avoid conflicts
+    const sessionTimerName = `getSession-${effectId}`
+    const profileTimerName = `profileFetch-${effectId}`
+    
+    const logTime = DEBUG ? (name: string) => console.time(name) : () => {}
+    const logTimeEnd = DEBUG ? (name: string) => {
+      try {
+        console.timeEnd(name)
+      } catch (e) {
+        // Timer doesn't exist, ignore
+      }
+    } : () => {}
+    
+    logGroup(`🔑 useAuth: Starting initialization [${effectId}]`)
+log('useAuth: Environment check', {
       hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+      debug: DEBUG,
+      devBypass: DEV_BYPASS,
+      effectId,
+      timestamp: new Date().toISOString()
     })
+    
+    // In development with recent login, use mock data
+    if (DEV_BYPASS && localStorage.getItem('harbor-login-success')) {
+      const email = localStorage.getItem('harbor-user-email') || 'dev@example.com'
+      log('🚀 Dev bypass active - using mock user')
+      
+      const devTimeout = setTimeout(() => {
+        if (mounted) {
+          setAuthState({
+            user: {
+              id: 'dev-user-id',
+              email,
+              app_metadata: {},
+              user_metadata: {
+                full_name: 'Dev User',
+                apartment_number: '101',
+              },
+              aud: 'authenticated',
+              created_at: new Date().toISOString(),
+            } as any,
+            profile: {
+              id: 'dev-user-id',
+              email,
+              full_name: 'Dev User',
+              apartment_number: '101',
+              phone_number: null,
+              is_approved: true,
+              is_admin: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            } as Profile,
+            loading: false,
+          })
+        }
+      }, 100)
+      
+      logGroupEnd()
+      
+      // Return cleanup function for dev bypass
+      return () => {
+        mounted = false
+        clearTimeout(devTimeout)
+      }
+    }
     
     // Get initial session with timeout
     const getInitialSession = async () => {
       try {
         // Check environment variables first
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
           console.error('Missing Supabase environment variables')
           if (mounted) setAuthState({ user: null, profile: null, loading: false })
           return
         }
 
-        console.log('useAuth: Fetching session...')
+        logTime(sessionTimerName)
+        log('useAuth: Fetching session...')
         
         // Try to get session with a more aggressive timeout
         let session = null
         let sessionError = null
         
         try {
+          const sessionStartTime = performance.now()
           const result = await Promise.race([
             supabase.auth.getSession(),
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Session fetch timeout')), 3000)
+setTimeout(() => reject(new Error('Session fetch timeout')), 3000)
             )
           ])
+          const sessionEndTime = performance.now()
+          
           session = (result as any)?.data?.session
           sessionError = (result as any)?.error
+          
+          logTimeEnd(sessionTimerName)
+          log('📊 Session timing:', {
+            duration: `${(sessionEndTime - sessionStartTime).toFixed(2)}ms`,
+            hasSession: !!session,
+            hasUser: !!session?.user,
+            sessionId: session?.user?.id?.substring(0, 8) + '...',
+            error: sessionError
+          })
         } catch (timeoutErr) {
-          console.warn('Session fetch timed out, continuing without session')
+          logTimeEnd(sessionTimerName)
+          console.warn('⚠️ Session fetch timed out, continuing without session', timeoutErr)
           if (mounted) {
             setAuthState({ user: null, profile: null, loading: false })
           }
+          logGroupEnd()
           return
         }
-        
-        console.log('useAuth: Session result', { hasSession: !!session, error: sessionError })
         
         if (sessionError) {
           console.error('Session error:', sessionError)
@@ -86,7 +194,13 @@ export function useAuth() {
         }
         
         if (session?.user) {
+          logGroup('👤 Fetching user profile')
+          logTime(profileTimerName)
+          log('Profile fetch for user:', session.user.id.substring(0, 8) + '...')
+          
           try {
+            const profileStartTime = performance.now()
+            
             // Fetch user profile with timeout
             const profilePromise = supabase
               .from('profiles')
@@ -95,14 +209,27 @@ export function useAuth() {
               .single()
             
             const profileTimeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
             )
 
             const profileResult = await Promise.race([
               profilePromise,
               profileTimeoutPromise
             ])
+            
+            const profileEndTime = performance.now()
+            logTimeEnd(profileTimerName)
+            
             const { data: profile, error: profileError } = profileResult as { data: Profile | null, error: { code?: string, message?: string } | null }
+            
+            log('📊 Profile fetch timing:', {
+              duration: `${(profileEndTime - profileStartTime).toFixed(2)}ms`,
+              hasProfile: !!profile,
+              error: profileError,
+              profileId: profile?.id?.substring(0, 8) + '...',
+              isApproved: profile?.is_approved,
+              isAdmin: profile?.is_admin
+            })
 
             if (profileError) {
               console.error('Profile error:', profileError)
@@ -200,7 +327,7 @@ export function useAuth() {
 
     // Fallback timeout to ensure loading never gets stuck
     const fallbackTimeout = setTimeout(() => {
-      if (mounted) {
+      if (mounted && authState.loading) {
         console.warn('Auth loading timeout, forcing non-loading state - user should be able to use the app')
         setAuthState({
           user: null,
@@ -208,7 +335,7 @@ export function useAuth() {
           loading: false,
         })
       }
-    }, 4000)
+    }, 5000)
 
     getInitialSession()
 
