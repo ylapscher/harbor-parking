@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 const CreateAvailabilitySchema = z.object({
@@ -18,7 +18,7 @@ const UpdateAvailabilitySchema = z.object({
 })
 
 async function getAuthenticatedUser(request: NextRequest) {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseAdmin()
   
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
     const { searchParams } = new URL(request.url)
     
     const spotId = searchParams.get('spot_id')
@@ -95,10 +95,11 @@ export async function GET(request: NextRequest) {
 
     const { data: availabilities, error } = await query
 
-    if (error) {
+if (error) {
+      console.error('Error fetching availabilities:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch availabilities' },
-        { status: 500 }
+        { error: error.message || 'Failed to fetch availabilities' },
+        { status: error.code === '42501' ? 403 : 500 }
       )
     }
 
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Check if user owns the parking spot
     const { data: spot } = await supabase
@@ -190,10 +191,11 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (error) {
+if (error) {
+      console.error('Error creating availability:', error)
       return NextResponse.json(
-        { error: 'Failed to create availability' },
-        { status: 500 }
+        { error: error.message || 'Failed to create availability' },
+        { status: error.code === '42501' ? 403 : error.code === '23505' ? 409 : 500 }
       )
     }
 
@@ -239,7 +241,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Check if availability exists and user owns the spot
     const { data: availability } = await supabase
@@ -284,10 +286,11 @@ export async function PUT(request: NextRequest) {
       .select()
       .single()
 
-    if (error) {
+if (error) {
+      console.error('Error updating availability:', error)
       return NextResponse.json(
-        { error: 'Failed to update availability' },
-        { status: 500 }
+        { error: error.message || 'Failed to update availability' },
+        { status: error.code === '42501' ? 403 : 500 }
       )
     }
 
@@ -321,7 +324,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Check if availability exists and user owns the spot
     const { data: availability } = await supabase
@@ -354,10 +357,11 @@ export async function DELETE(request: NextRequest) {
       .delete()
       .eq('id', id)
 
-    if (error) {
+if (error) {
+      console.error('Error deleting availability:', error)
       return NextResponse.json(
-        { error: 'Failed to delete availability' },
-        { status: 500 }
+        { error: error.message || 'Failed to delete availability' },
+        { status: error.code === '42501' ? 403 : 500 }
       )
     }
 

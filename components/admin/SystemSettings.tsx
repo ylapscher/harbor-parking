@@ -49,7 +49,7 @@ export function SystemSettings({ onRefresh }: SystemSettingsProps) {
     setLoading(true)
     setMessage(null)
 
-    try {
+try {
       if (action === 'approve_all') {
         const { error } = await supabase
           .from('profiles')
@@ -59,7 +59,10 @@ export function SystemSettings({ onRefresh }: SystemSettingsProps) {
           })
           .eq('is_approved', false)
 
-        if (error) throw error
+        if (error) {
+          console.error('Error approving all users:', error)
+          throw error
+        }
         setMessage({ type: 'success', text: 'All pending users have been approved!' })
       } else if (action === 'reset_all_claims') {
         const { error } = await supabase
@@ -70,14 +73,18 @@ export function SystemSettings({ onRefresh }: SystemSettingsProps) {
           })
           .in('status', ['pending', 'confirmed'])
 
-        if (error) throw error
+        if (error) {
+          console.error('Error resetting all claims:', error)
+          throw error
+        }
         setMessage({ type: 'success', text: 'All active claims have been reset!' })
       }
 
       onRefresh()
     } catch (error) {
       console.error(`Failed to ${action}:`, error)
-      setMessage({ type: 'error', text: `Failed to ${action.replace('_', ' ')}. Please try again.` })
+      const errorMessage = (error as Error)?.message || `Failed to ${action.replace('_', ' ')}`
+      setMessage({ type: 'error', text: `${errorMessage}. Please try again.` })
     } finally {
       setLoading(false)
     }
@@ -87,7 +94,7 @@ export function SystemSettings({ onRefresh }: SystemSettingsProps) {
     setLoading(true)
     setMessage(null)
 
-    try {
+try {
       if (action === 'cleanup_expired') {
         // Clean up expired availabilities
         const { error: availError } = await supabase
@@ -95,7 +102,10 @@ export function SystemSettings({ onRefresh }: SystemSettingsProps) {
           .update({ is_active: false })
           .lt('end_time', new Date().toISOString())
 
-        if (availError) throw availError
+        if (availError) {
+          console.error('Error cleaning up expired availabilities:', availError)
+          throw availError
+        }
 
         // Clean up expired claims
         const { error: claimError } = await supabase
@@ -104,7 +114,10 @@ export function SystemSettings({ onRefresh }: SystemSettingsProps) {
           .eq('status', 'confirmed')
           .lt('availabilities.end_time', new Date().toISOString())
 
-        if (claimError) throw claimError
+        if (claimError) {
+          console.error('Error cleaning up expired claims:', claimError)
+          throw claimError
+        }
 
         setMessage({ type: 'success', text: 'Expired records cleaned up successfully!' })
       } else if (action === 'reset_verifications') {
@@ -116,14 +129,18 @@ export function SystemSettings({ onRefresh }: SystemSettingsProps) {
           })
           .eq('is_verified', true)
 
-        if (error) throw error
+        if (error) {
+          console.error('Error resetting verifications:', error)
+          throw error
+        }
         setMessage({ type: 'success', text: 'All spot verifications have been reset!' })
       }
 
       onRefresh()
     } catch (error) {
       console.error(`Failed to ${action}:`, error)
-      setMessage({ type: 'error', text: `Failed to ${action.replace('_', ' ')}. Please try again.` })
+      const errorMessage = (error as Error)?.message || `Failed to ${action.replace('_', ' ')}`
+      setMessage({ type: 'error', text: `${errorMessage}. Please try again.` })
     } finally {
       setLoading(false)
     }

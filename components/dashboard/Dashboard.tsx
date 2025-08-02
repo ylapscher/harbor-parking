@@ -73,8 +73,9 @@ export function Dashboard() {
         .order('created_at', { ascending: false })
 
       setMyClaims(claims || [])
-    } catch {
-      // Handle errors silently
+} catch (error) {
+      console.error('Error fetching dashboard data:', error)
+      setError('Failed to load dashboard data. Please refresh the page.')
     } finally {
       setLoading(false)
     }
@@ -103,13 +104,21 @@ export function Dashboard() {
     setError(null)
     setSuccess(null)
 
-    try {
+try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      if (!token) {
+        window.location.href = '/login'
+        return
+      }
+
       // Use the API route instead of direct Supabase call
       const response = await fetch('/api/parking-spots', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           spot_number: newSpotData.spotNumber,

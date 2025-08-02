@@ -4,10 +4,17 @@ import { Database } from '@/types/database'
 
 export async function createClient() {
   const cookieStore = await cookies()
+  
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  
+  if (!url || !publishableKey) {
+    throw new Error(`Missing Supabase environment variables: url=${!!url}, publishableKey=${!!publishableKey}`)
+  }
 
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    publishableKey,
     {
       cookies: {
         getAll() {

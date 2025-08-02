@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 const UpdateProfileSchema = z.object({
@@ -8,7 +8,7 @@ const UpdateProfileSchema = z.object({
 })
 
 async function getAuthenticatedUser(request: NextRequest) {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseAdmin()
   
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Fetch user profile
     const { data: profile, error } = await supabase
@@ -67,19 +67,21 @@ export async function GET(request: NextRequest) {
           .select()
           .single()
 
-        if (createError) {
+if (createError) {
+          console.error('Error creating profile:', createError)
           return NextResponse.json(
-            { error: 'Failed to create profile' },
-            { status: 500 }
+            { error: createError.message || 'Failed to create profile' },
+            { status: createError.code === '42501' ? 403 : 500 }
           )
         }
 
         return NextResponse.json({ profile: newProfile })
       }
 
+console.error('Error fetching profile:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch profile' },
-        { status: 500 }
+        { error: error.message || 'Failed to fetch profile' },
+        { status: error.code === '42501' ? 403 : 500 }
       )
     }
 
@@ -125,7 +127,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdmin()
 
     // Check if profile exists
     const { data: existingProfile } = await supabase
@@ -151,10 +153,11 @@ export async function PUT(request: NextRequest) {
       .select()
       .single()
 
-    if (error) {
+if (error) {
+      console.error('Error updating profile:', error)
       return NextResponse.json(
-        { error: 'Failed to update profile' },
-        { status: 500 }
+        { error: error.message || 'Failed to update profile' },
+        { status: error.code === '42501' ? 403 : 500 }
       )
     }
 
