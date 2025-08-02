@@ -97,7 +97,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     )
 
     return () => subscription.unsubscribe()
-  }, [supabase.auth])
+  }, [supabase])
 
   const signOut = async () => {
     await supabase.auth.signOut()

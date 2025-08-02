@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { getSupabaseClient } from '@/lib/supabase/singleton'
 import { ParkingSpotCard } from '@/components/parking/ParkingSpotCard'
@@ -21,12 +21,12 @@ export function Dashboard() {
 
   const supabase = getSupabaseClient()
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return
 
     try {
       // Try to fetch user's parking spots with simplified query first
-      const { data: spots, error: spotsError } = await supabase
+      const { data: spots } = await supabase
         .from('parking_spots')
         .select('*')
         .eq('owner_id', user.id)
@@ -34,7 +34,7 @@ export function Dashboard() {
       setMySpots(spots || [])
 
       // Try to fetch available spots with simplified query
-      const { data: available, error: availableError } = await supabase
+      const { data: available } = await supabase
         .from('availabilities')
         .select('*')
         .eq('is_active', true)
@@ -43,25 +43,25 @@ export function Dashboard() {
       setAvailableSpots(available || [])
 
       // Try to fetch user's claims with simplified query
-      const { data: claims, error: claimsError } = await supabase
+      const { data: claims } = await supabase
         .from('claims')
         .select('*')
         .eq('claimer_id', user.id)
         .order('created_at', { ascending: false })
 
       setMyClaims(claims || [])
-    } catch (error) {
+    } catch {
       // Handle errors silently
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, supabase])
 
   useEffect(() => {
     if (user) {
       fetchData()
     }
-  }, [user])
+  }, [user, fetchData])
 
   const handleToggleAvailability = (spotId: string) => {
     setSelectedSpot(spotId)
@@ -162,7 +162,7 @@ export function Dashboard() {
             <h3 className="text-yellow-200 font-medium mb-2">Account Pending Approval</h3>
             <p className="text-yellow-300 text-sm">
               Your account is currently pending approval from a building administrator. 
-              You'll be able to access all features once your account is approved.
+              You&apos;ll be able to access all features once your account is approved.
             </p>
           </div>
         )}

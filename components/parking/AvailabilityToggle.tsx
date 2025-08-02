@@ -92,8 +92,8 @@ export function AvailabilityToggle({
 
       onUpdate?.()
       onClose?.()
-    } catch (err: any) {
-      setError(err.message || 'Failed to update availability')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update availability')
     } finally {
       setLoading(false)
     }
@@ -112,8 +112,8 @@ export function AvailabilityToggle({
       if (error) throw error
       onUpdate?.()
       onClose?.()
-    } catch (err: any) {
-      setError(err.message || 'Failed to deactivate availability')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to deactivate availability')
     } finally {
       setLoading(false)
     }

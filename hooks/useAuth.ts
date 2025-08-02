@@ -218,9 +218,29 @@ export function useAuth() {
     await supabase.auth.signOut()
   }
 
+  const refreshProfile = async () => {
+    if (!authState.user) return
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authState.user.id)
+        .single()
+
+      setAuthState(prev => ({
+        ...prev,
+        profile
+      }))
+    } catch (err) {
+      // Handle error silently
+    }
+  }
+
   return {
     ...authState,
     signOut,
+    refreshProfile,
     isAdmin: authState.profile?.is_admin || false,
     isApproved: authState.profile?.is_approved || false,
   }
