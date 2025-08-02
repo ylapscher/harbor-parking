@@ -42,8 +42,8 @@ export function LoginForm() {
         setError('Login failed - no user returned')
         setLoading(false)
       }
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
       setLoading(false)
     }
   }
@@ -99,7 +99,7 @@ export function LoginForm() {
       </form>
       
       <p className="text-center text-sm text-gray-300 mt-4">
-        Don't have an account?{' '}
+        Don&apos;t have an account?{' '}
         <button 
           type="button"
           className="text-blue-400 hover:text-blue-300 font-medium"

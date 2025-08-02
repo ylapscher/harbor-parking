@@ -90,8 +90,8 @@ export function SpotClaimModal({ availability, onClaim, onClose }: SpotClaimModa
 
       onClaim?.()
       onClose?.()
-    } catch (err: any) {
-      setError(err.message || 'Failed to claim spot')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to claim spot')
     } finally {
       setLoading(false)
     }
@@ -188,7 +188,7 @@ export function SpotClaimModal({ availability, onClaim, onClose }: SpotClaimModa
         <div className="mb-6 p-3 bg-blue-900 bg-opacity-50 border border-blue-700 rounded">
           <p className="text-sm text-blue-200">
             <strong>Claim Policy:</strong> Your claim will expire in 2 hours if not confirmed by the owner. 
-            You'll receive notifications about the status of your claim.
+            You&apos;ll receive notifications about the status of your claim.
           </p>
         </div>
 

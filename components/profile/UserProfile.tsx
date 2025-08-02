@@ -57,8 +57,8 @@ export function UserProfile() {
 
       setSuccess('Profile updated successfully!')
       await refreshProfile()
-    } catch (err: any) {
-      setError(err.message || 'Failed to update profile')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update profile')
     } finally {
       setLoading(false)
     }
@@ -74,8 +74,8 @@ export function UserProfile() {
 
       if (error) throw error
       setSuccess('Password reset email sent! Check your inbox.')
-    } catch (err: any) {
-      setError(err.message || 'Failed to send password reset email')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to send password reset email')
     }
   }
 
@@ -269,7 +269,7 @@ export function UserProfile() {
           <h3 className="text-yellow-200 font-medium mb-2">Account Pending Approval</h3>
           <p className="text-yellow-300 text-sm">
             Your account is currently pending approval from a building administrator. 
-            You'll be able to access all features once your account is approved and your parking spots are verified.
+            You&apos;ll be able to access all features once your account is approved and your parking spots are verified.
           </p>
         </div>
       )}

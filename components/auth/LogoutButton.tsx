@@ -21,7 +21,7 @@ export function LogoutButton({ className = '', children }: LogoutButtonProps) {
       await supabase.auth.signOut()
       router.push('/')
       router.refresh()
-    } catch (error) {
+    } catch {
       // Handle error silently
     } finally {
       setLoading(false)
