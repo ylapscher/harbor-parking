@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { getSupabaseClient } from '@/lib/supabase/singleton'
-import { Profile, ParkingSpot, Claim } from '@/types'
+import { Profile, ParkingSpot } from '@/types'
 import { UserManagementTable } from './UserManagementTable'
 import { SpotVerificationTable } from './SpotVerificationTable'
 import { ActivityMonitor } from './ActivityMonitor'
@@ -25,6 +25,22 @@ interface ExtendedProfile extends Profile {
   last_activity?: string
 }
 
+interface SpotWithOwner extends ParkingSpot {
+  profiles: {
+    full_name: string
+    apartment_number: string
+  }
+}
+
+interface Activity {
+  type: string
+  id: string
+  created_at: string
+  user: string
+  description: string
+  status: string
+}
+
 export function AdminDashboard() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('overview')
@@ -37,8 +53,8 @@ export function AdminDashboard() {
     totalClaims: 0,
   })
   const [users, setUsers] = useState<ExtendedProfile[]>([])
-  const [spots, setSpots] = useState<ParkingSpot[]>([])
-  const [recentActivity, setRecentActivity] = useState<any[]>([])
+  const [spots, setSpots] = useState<SpotWithOwner[]>([])
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
 
   const supabase = getSupabaseClient()
@@ -59,7 +75,7 @@ export function AdminDashboard() {
         `)
         .order('created_at', { ascending: false })
 
-      // Fetch all parking spots
+      // Fetch all parking spots with owner details
       const { data: spotsData } = await supabase
         .from('parking_spots')
         .select(`
@@ -285,12 +301,12 @@ export function AdminDashboard() {
               </button>
             </div>
             <div className="space-y-3">
-              {recentActivity.slice(0, 5).map((activity, index) => (
+              {recentActivity.slice(0, 5).map((activity) => (
                 <div key={`${activity.type}-${activity.id}`} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-b-0">
                   <div>
-                    <p className="text-white text-sm">{activity.description}</p>
+                    <p className="text-white text-sm">{String(activity.description)}</p>
                     <p className="text-gray-400 text-xs">
-                      by {activity.user} • {new Date(activity.created_at).toLocaleDateString()}
+                      by {String(activity.user)} • {new Date(String(activity.created_at)).toLocaleDateString()}
                     </p>
                   </div>
                   <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
@@ -300,7 +316,7 @@ export function AdminDashboard() {
                       ? 'bg-yellow-100 text-yellow-800'
                       : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {activity.status}
+                    {String(activity.status)}
                   </span>
                 </div>
               ))}

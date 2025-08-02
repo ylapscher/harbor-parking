@@ -35,7 +35,7 @@ export function ExportPanel({ users, spots, activities }: ExportPanelProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv')
 
-  const downloadCSV = (data: any[], filename: string, headers: string[]) => {
+  const downloadCSV = (data: Record<string, unknown>[], filename: string, headers: string[]) => {
     const csvContent = [
       headers.join(','),
       ...data.map(row => headers.map(header => {
@@ -52,7 +52,7 @@ export function ExportPanel({ users, spots, activities }: ExportPanelProps) {
     URL.revokeObjectURL(link.href)
   }
 
-  const downloadJSON = (data: any[], filename: string) => {
+  const downloadJSON = (data: Record<string, unknown>[] | Record<string, unknown>, filename: string) => {
     const jsonContent = JSON.stringify(data, null, 2)
     const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' })
     const link = document.createElement('a')
@@ -313,7 +313,7 @@ export function ExportPanel({ users, spots, activities }: ExportPanelProps) {
           <div>
             <h4 className="text-lg font-medium text-white mb-3">Most Active Users</h4>
             <div className="space-y-2">
-              {report.topActiveUsers.map((user, index) => (
+              {report.topActiveUsers.map((user) => (
                 <div key={user.id} className="flex items-center justify-between py-2 px-3 bg-gray-700 rounded">
                   <div>
                     <span className="text-white font-medium">{user.full_name}</span>

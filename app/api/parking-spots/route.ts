@@ -200,7 +200,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const updatePayload: Record<string, any> = { ...validationResult.data }
+    const updatePayload: Record<string, string | undefined> = { ...validationResult.data }
     
     // Map location to building_section if location is provided
     if (updatePayload.location) {

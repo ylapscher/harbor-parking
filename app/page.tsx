@@ -1,14 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { SignupForm } from '@/components/auth/SignupForm'
 
 export default function Home() {
   const [showSignup, setShowSignup] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
-  const router = useRouter()
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -50,8 +48,8 @@ export default function Home() {
             Share Parking Spots with Your <span className="text-blue-400">Neighbors</span>
           </h1>
           <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            Transform your building's parking into a collaborative community resource. 
-            Share your spot when you're away, find parking when you need it.
+            Transform your building&apos;s parking into a collaborative community resource. 
+            Share your spot when you&apos;re away, find parking when you need it.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
@@ -97,7 +95,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-bold text-white mb-4">1. Register Your Spot</h3>
               <p className="text-gray-300">
-                Add your parking spot details and specify which elevator it's nearest to
+                Add your parking spot details and specify which elevator it&apos;s nearest to
               </p>
             </div>
 
@@ -110,7 +108,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-bold text-white mb-4">2. Set Availability</h3>
               <p className="text-gray-300">
-                Mark your spot as available when you're traveling, working from home, or out for the day
+                Mark your spot as available when you&apos;re traveling, working from home, or out for the day
               </p>
             </div>
 
@@ -216,7 +214,7 @@ export default function Home() {
                 </svg>
               </div>
               <p className="text-gray-300 mb-4">
-                "Finally solved our guest parking nightmare! My parents can actually visit without circling the block for 30 minutes."
+                &quot;Finally solved our guest parking nightmare! My parents can actually visit without circling the block for 30 minutes.&quot;
               </p>
               <div className="text-white font-medium">Sarah Chen</div>
               <div className="text-gray-400 text-sm">Apartment 12B</div>
@@ -229,7 +227,7 @@ export default function Home() {
                 </svg>
               </div>
               <p className="text-gray-300 mb-4">
-                "I travel for work 3 days a week. Now my spot helps neighbors instead of sitting empty. Great community initiative!"
+                &quot;I travel for work 3 days a week. Now my spot helps neighbors instead of sitting empty. Great community initiative!&quot;
               </p>
               <div className="text-white font-medium">Mike Rodriguez</div>
               <div className="text-gray-400 text-sm">Apartment 8A</div>
@@ -242,7 +240,7 @@ export default function Home() {
                 </svg>
               </div>
               <p className="text-gray-300 mb-4">
-                "Super easy to use and everyone in the building loves it. Makes living here feel more like a real community."
+                &quot;Super easy to use and everyone in the building loves it. Makes living here feel more like a real community.&quot;
               </p>
               <div className="text-white font-medium">Emma Thompson</div>
               <div className="text-gray-400 text-sm">Apartment 15C</div>
@@ -255,10 +253,10 @@ export default function Home() {
       <section className="py-20">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to Transform Your Building's Parking?
+            Ready to Transform Your Building&apos;s Parking?
           </h2>
           <p className="text-xl text-gray-300 mb-8">
-            Join the growing community of residents who've solved their parking challenges.
+            Join the growing community of residents who&apos;ve solved their parking challenges.
           </p>
           <button
             onClick={() => {

@@ -165,7 +165,7 @@ export function UserManagementTable({ users, onRefresh }: UserManagementTablePro
           
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'approved' | 'admin')}
             className="px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="all">All Users</option>
