@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { getSupabaseClient } from '@/lib/supabase/singleton'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
@@ -13,42 +13,54 @@ export function LoginForm() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!email || !password) {
+      setError('Please fill in both email and password')
+      return
+    }
+    
     setLoading(true)
     setError('')
 
-    const supabase = createClient()
-
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const supabase = getSupabaseClient()
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
         setError(error.message)
-      } else {
-        router.push('/dashboard')
+        setLoading(false)
+        return
       }
-    } catch (err) {
-      setError('An unexpected error occurred')
-    } finally {
+
+      if (data.user) {
+        router.push('/dashboard')
+      } else {
+        setError('Login failed - no user returned')
+        setLoading(false)
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred')
       setLoading(false)
     }
   }
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <h1 className="text-2xl font-bold text-center mb-6">Login</h1>
+      <h1 className="text-2xl font-bold text-center mb-6 text-white">Login</h1>
       
       <form onSubmit={handleLogin} className="space-y-4">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded">
             {error}
           </div>
         )}
         
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-1">
             Email
           </label>
           <input
@@ -57,13 +69,13 @@ export function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             placeholder="Enter your email"
           />
         </div>
         
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-1">
             Password
           </label>
           <input
@@ -72,7 +84,7 @@ export function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             placeholder="Enter your password"
           />
         </div>
@@ -80,15 +92,19 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
       
-      <p className="text-center text-sm text-gray-600 mt-4">
+      <p className="text-center text-sm text-gray-300 mt-4">
         Don't have an account?{' '}
-        <button className="text-blue-600 hover:text-blue-500 font-medium">
+        <button 
+          type="button"
+          className="text-blue-400 hover:text-blue-300 font-medium"
+          onClick={() => router.push('/signup')}
+        >
           Sign up
         </button>
       </p>
