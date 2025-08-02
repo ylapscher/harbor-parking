@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { spot_number, location, notes } = validationResult.data
+    const { spot_number, location } = validationResult.data
     const supabase = getSupabaseClient()
 
     // Check if spot number already exists for this user
@@ -128,8 +128,8 @@ export async function POST(request: NextRequest) {
       .insert({
         owner_id: user.id,
         spot_number,
-        location,
-        notes: notes || null,
+        building_section: location, // Map location to building_section
+        is_verified: false,
       })
       .select()
       .single()
@@ -200,10 +200,18 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    const updatePayload: Record<string, any> = { ...validationResult.data }
+    
+    // Map location to building_section if location is provided
+    if (updatePayload.location) {
+      updatePayload.building_section = updatePayload.location
+      delete updatePayload.location
+    }
+
     const { data: updatedSpot, error } = await supabase
       .from('parking_spots')
       .update({
-        ...validationResult.data,
+        ...updatePayload,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

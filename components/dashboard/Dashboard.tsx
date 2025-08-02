@@ -104,25 +104,31 @@ export function Dashboard() {
     setSuccess(null)
 
     try {
-      const { data, error } = await supabase
-        .from('parking_spots')
-        .insert({
-          owner_id: user.id,
+      // Use the API route instead of direct Supabase call
+      const response = await fetch('/api/parking-spots', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
           spot_number: newSpotData.spotNumber,
-          building_section: newSpotData.nearestElevator,
-          is_verified: false,
+          location: newSpotData.nearestElevator,
+          notes: '' // Optional field
         })
-        .select()
+      })
 
-      if (error) {
-        console.error('Database error:', error)
-        if (error.code === '23505') {
+      if (!response.ok) {
+        const errorData = await response.json()
+        if (response.status === 409) {
           setError('A parking spot with this number already exists. Please use a different spot number.')
         } else {
-          setError(`Failed to add parking spot: ${error.message}`)
+          setError(errorData.error || 'Failed to add parking spot')
         }
         return
       }
+
+      await response.json() // Get the response but don't store it since we refresh data anyway
 
       // Reset form and refresh data
       setNewSpotData({ spotNumber: '', nearestElevator: '' })
