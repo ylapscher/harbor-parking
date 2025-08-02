@@ -164,16 +164,6 @@ export function SignupForm() {
         </button>
       </form>
       
-      <p className="text-center text-sm text-gray-300 mt-4">
-        Already have an account?{' '}
-        <button 
-          type="button"
-          className="text-blue-400 hover:text-blue-300 font-medium"
-          onClick={() => router.push('/')}
-        >
-          Sign in
-        </button>
-      </p>
     </div>
   )
 }

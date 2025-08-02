@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase/singleton'
 
 export function LoginForm() {
@@ -9,7 +8,6 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,27 +21,48 @@ export function LoginForm() {
     setError('')
 
     try {
-      const supabase = getSupabaseClient()
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) {
-        setError(error.message)
-        setLoading(false)
+      // Check if Supabase is properly configured
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        setError('Authentication service is not properly configured. Please contact support.')
         return
       }
 
-      if (data.user) {
-        router.push('/dashboard')
+      const supabase = getSupabaseClient()
+      
+      // Add timeout to prevent infinite loading
+      const loginPromise = supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Login request timed out. Please try again.')), 30000)
+      )
+
+      const result = await Promise.race([loginPromise, timeoutPromise])
+      const { data, error } = result as { data: { user: unknown } | null; error: { message?: string } | null }
+
+      if (error) {
+        console.error('Login error:', error)
+        setError(error.message || 'Login failed. Please check your credentials.')
+        return
+      }
+
+      if (data?.user) {
+        console.log('Login successful, redirecting to dashboard')
+        // Force page navigation
+        window.location.href = '/dashboard'
       } else {
         setError('Login failed - no user returned')
-        setLoading(false)
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      console.error('Login catch error:', err)
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('An unexpected error occurred. Please try again.')
+      }
+    } finally {
       setLoading(false)
     }
   }
@@ -98,16 +117,6 @@ export function LoginForm() {
         </button>
       </form>
       
-      <p className="text-center text-sm text-gray-300 mt-4">
-        Don&apos;t have an account?{' '}
-        <button 
-          type="button"
-          className="text-blue-400 hover:text-blue-300 font-medium"
-          onClick={() => router.push('/signup')}
-        >
-          Sign up
-        </button>
-      </p>
     </div>
   )
 }
