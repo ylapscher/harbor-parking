@@ -14,7 +14,8 @@ interface AuthState {
 export function useAuth() {
   // Check for development bypass immediately
   const isDev = process.env.NODE_ENV === 'development'
-  const hasRecentLogin = typeof window !== 'undefined' && localStorage.getItem('harbor-login-success')
+  const loginTime = typeof window !== 'undefined' ? localStorage.getItem('harbor-login-success') : null
+  const hasRecentLogin = loginTime && (Date.now() - parseInt(loginTime)) < 300000 // 5 minutes
   const userEmail = typeof window !== 'undefined' ? localStorage.getItem('harbor-user-email') : null
   
   const [authState, setAuthState] = useState<AuthState>({
@@ -64,6 +65,11 @@ export function useAuth() {
     let mounted = true
     const effectId = Math.random().toString(36).substr(2, 9)
     
+    // Prevent multiple initializations
+    if (authState.user && !authState.loading) {
+      return
+    }
+    
     const DEBUG = process.env.NEXT_PUBLIC_DEBUG === 'true'
     const log = DEBUG ? console.log : () => {}
     const logGroup = DEBUG ? console.group : () => {}
@@ -96,7 +102,10 @@ log('useAuth: Environment check', {
     })
     
     // In development with recent login, use mock data
-    if (DEV_BYPASS && localStorage.getItem('harbor-login-success')) {
+    const loginTime = localStorage.getItem('harbor-login-success')
+    const isRecentLogin = loginTime && (Date.now() - parseInt(loginTime)) < 300000 // 5 minutes
+    
+    if (DEV_BYPASS && isRecentLogin) {
       const email = localStorage.getItem('harbor-user-email') || 'dev@example.com'
       log('🚀 Dev bypass active - using mock user')
       
@@ -161,7 +170,7 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_P
           const result = await Promise.race([
             supabase.auth.getSession(),
             new Promise((_, reject) => 
-setTimeout(() => reject(new Error('Session fetch timeout')), 3000)
+setTimeout(() => reject(new Error('Session fetch timeout')), 10000)
             )
           ])
           const sessionEndTime = performance.now()
@@ -180,9 +189,48 @@ setTimeout(() => reject(new Error('Session fetch timeout')), 3000)
         } catch (timeoutErr) {
           logTimeEnd(sessionTimerName)
           console.warn('⚠️ Session fetch timed out, continuing without session', timeoutErr)
-          if (mounted) {
-            setAuthState({ user: null, profile: null, loading: false })
+          
+          // Check if we have a recent login and use dev bypass
+          const recentLogin = typeof window !== 'undefined' ? localStorage.getItem('harbor-login-success') : null
+          const isRecentLogin = recentLogin && (Date.now() - parseInt(recentLogin)) < 300000 // 5 minutes
+          
+          if (isRecentLogin && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true') {
+            const email = localStorage.getItem('harbor-user-email') || 'dev@example.com'
+            console.log('🚀 Using dev bypass due to recent login and timeout')
+            
+            if (mounted) {
+              setAuthState({
+                user: {
+                  id: 'dev-user-id',
+                  email,
+                  app_metadata: {},
+                  user_metadata: {
+                    full_name: 'Dev User',
+                    apartment_number: '101',
+                  },
+                  aud: 'authenticated',
+                  created_at: new Date().toISOString(),
+                } as any,
+                profile: {
+                  id: 'dev-user-id',
+                  email,
+                  full_name: 'Dev User',
+                  apartment_number: '101',
+                  phone_number: null,
+                  is_approved: true,
+                  is_admin: true,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                } as Profile,
+                loading: false,
+              })
+            }
+          } else {
+            if (mounted) {
+              setAuthState({ user: null, profile: null, loading: false })
+            }
           }
+          
           logGroupEnd()
           return
         }
@@ -209,7 +257,7 @@ setTimeout(() => reject(new Error('Session fetch timeout')), 3000)
               .single()
             
             const profileTimeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
             )
 
             const profileResult = await Promise.race([
@@ -426,7 +474,7 @@ setTimeout(() => reject(new Error('Session fetch timeout')), 3000)
       clearTimeout(fallbackTimeout)
       subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase])
 
   const signOut = async () => {
     await supabase.auth.signOut()

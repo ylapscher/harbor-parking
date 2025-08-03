@@ -31,6 +31,67 @@ export function Dashboard() {
   const fetchData = useCallback(async () => {
     if (!user) return
 
+    // Check if we're in dev mode with dev user
+    const isDevMode = process.env.NODE_ENV === 'development' && user.id === 'dev-user-id'
+    
+    if (isDevMode) {
+      // Use mock data for development
+      console.log('🚀 Using mock data for development dashboard')
+      
+      const mockSpots = [
+        {
+          id: 'mock-spot-1',
+          spot_number: 'A101',
+          owner_id: 'dev-user-id',
+          building_section: 'North Tower',
+          is_verified: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ]
+      
+      const mockAvailable = [
+        {
+          id: 'mock-availability-1',
+          parking_spot_id: 'mock-spot-2',
+          start_time: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+          end_time: new Date(Date.now() + 7200000).toISOString(), // 2 hours from now
+          notes: 'Available for visitors',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          parking_spots: {
+            id: 'mock-spot-2',
+            spot_number: 'B205',
+            building_section: 'South Tower',
+            owner_id: 'other-user-id',
+            profiles: {
+              id: 'other-user-id',
+              full_name: 'John Doe',
+              apartment_number: '205'
+            }
+          }
+        }
+      ]
+      
+      const mockClaims = [
+        {
+          id: 'mock-claim-1',
+          availability_id: 'mock-availability-2',
+          claimer_id: 'dev-user-id',
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ]
+      
+      setMySpots(mockSpots)
+      setAvailableSpots(mockAvailable)
+      setMyClaims(mockClaims)
+      setLoading(false)
+      return
+    }
+
     try {
       // Try to fetch user's parking spots with simplified query first
       const { data: spots } = await supabase
