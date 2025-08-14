@@ -390,10 +390,10 @@ try {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold text-white">
-                        Spot {claim.availabilities.parking_spots.spot_number}
+                        Spot {claim.availabilities?.parking_spots.spot_number}
                       </h3>
                       <p className="text-sm text-gray-400">
-                        Owner: {claim.availabilities.parking_spots.profiles.full_name}
+                        Owner: {claim.availabilities?.parking_spots.profiles.full_name}
                       </p>
                       <p className="text-sm text-gray-400">
                         Claimed: {new Date(claim.created_at).toLocaleDateString()}
