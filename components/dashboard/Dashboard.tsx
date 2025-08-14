@@ -45,6 +45,11 @@ export function Dashboard() {
           owner_id: 'dev-user-id',
           building_section: 'North Tower',
           is_verified: true,
+          profiles: {
+            full_name: "Dev One",
+            apartment_number: "101",
+            email: "dev-one@example.com",
+          },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }
@@ -53,7 +58,7 @@ export function Dashboard() {
       const mockAvailable = [
         {
           id: 'mock-availability-1',
-          parking_spot_id: 'mock-spot-2',
+          spot_id: 'mock-spot-2',
           start_time: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
           end_time: new Date(Date.now() + 7200000).toISOString(), // 2 hours from now
           notes: 'Available for visitors',
@@ -65,11 +70,14 @@ export function Dashboard() {
             spot_number: 'B205',
             building_section: 'South Tower',
             owner_id: 'other-user-id',
+            is_verified: true,
             profiles: {
-              id: 'other-user-id',
-              full_name: 'John Doe',
-              apartment_number: '205'
-            }
+              full_name: "John Doe",
+              apartment_number: "205",
+              email: "john-doe@example.com",
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           }
         }
       ]
@@ -79,9 +87,18 @@ export function Dashboard() {
           id: 'mock-claim-1',
           availability_id: 'mock-availability-2',
           claimer_id: 'dev-user-id',
-          status: 'pending',
+          status: 'pending' as const,
+          notes: "",
+          profiles: {
+            full_name: "John Doe",
+            apartment_number: "205",
+            email: "john-doe@example.com",
+          },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          availabilities: mockAvailable[0],
+          claimed_at: new Date().toISOString(),
+          expires_at: new Date().toISOString(),
         }
       ]
       
