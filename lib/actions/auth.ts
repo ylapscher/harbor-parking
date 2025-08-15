@@ -1,7 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { registerSchema, loginSchema } from '@/lib/validations/auth'
 
 export async function signInAction(formData: FormData) {
@@ -11,10 +11,10 @@ export async function signInAction(formData: FormData) {
   // Validate input
   const result = loginSchema.safeParse({ email, password })
   if (!result.success) {
-    return { error: 'Invalid email or password format' }
+    return { success: false, message: 'Invalid email or password format' }
   }
 
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
 
   const { error } = await supabase.auth.signInWithPassword({
     email: result.data.email,
@@ -22,10 +22,10 @@ export async function signInAction(formData: FormData) {
   })
 
   if (error) {
-    return { error: error.message }
+    return { success: false, message: error.message }
   }
 
-  redirect('/dashboard')
+  return { success: true, message: 'Login successful' }
 }
 
 export async function signUpAction(formData: FormData) {
@@ -48,7 +48,7 @@ export async function signUpAction(formData: FormData) {
     return { error: result.error.issues[0]?.message || 'Invalid input' }
   }
 
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
 
   const { error } = await supabase.auth.signUp({
     email: result.data.email,
@@ -70,13 +70,13 @@ export async function signUpAction(formData: FormData) {
 }
 
 export async function signOutAction() {
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
   await supabase.auth.signOut()
   redirect('/')
 }
 
 export async function getCurrentUser() {
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
   
   const { data: { user }, error } = await supabase.auth.getUser()
   
