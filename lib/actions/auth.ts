@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { registerSchema, loginSchema } from '@/lib/validations/auth'
+import { revalidatePath } from 'next/cache'
 
 export async function signInAction(formData: FormData) {
   const email = formData.get('email') as string
@@ -25,6 +26,7 @@ export async function signInAction(formData: FormData) {
     return { success: false, message: error.message }
   }
 
+  revalidatePath('/', 'layout')
   return { success: true, message: 'Login successful' }
 }
 
@@ -65,7 +67,7 @@ export async function signUpAction(formData: FormData) {
   if (error) {
     return { error: error.message }
   }
-
+  
   return { success: 'Account created! Please check your email to verify your account.' }
 }
 
