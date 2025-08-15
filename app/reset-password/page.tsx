@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState('')
@@ -13,7 +13,7 @@ export default function ResetPassword() {
   const [validSession, setValidSession] = useState(false)
   
   const router = useRouter()
-  const supabase = getSupabaseClient()
+  const supabase = createSupabaseBrowserClient()
 
   useEffect(() => {
     // Check if we have a valid password reset session
