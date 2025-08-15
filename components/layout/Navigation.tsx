@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LogoutButton } from '@/components/auth/LogoutButton'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '../providers/AuthProvider'
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading } = useAuth()!
   const router = useRouter()
 
   if (loading) {

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
 import { AvailabilityWithSpot } from '@/types'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 interface SpotClaimModalProps {
   availability: AvailabilityWithSpot
@@ -15,7 +15,7 @@ export function SpotClaimModal({ availability, onClaim, onClose }: SpotClaimModa
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const supabase = getSupabaseClient()
+  const supabase = createSupabaseBrowserClient()
 
   const formatTime = (timeString: string) => {
     return new Date(timeString).toLocaleString('en-US', {

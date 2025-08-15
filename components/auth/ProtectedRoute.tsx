@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/components/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -21,7 +21,7 @@ export function ProtectedRoute({
   adminOnly = false,
   fallbackUrl = '/',
 }: ProtectedRouteProps) {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading } = useAuth()!
   const router = useRouter()
 
   useEffect(() => {

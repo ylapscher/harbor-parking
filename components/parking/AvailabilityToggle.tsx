@@ -1,7 +1,7 @@
 'use client'
 
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { useState } from 'react'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
 
 interface AvailabilityToggleProps {
   spotId: string
@@ -31,7 +31,7 @@ export function AvailabilityToggle({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const supabase = getSupabaseClient()
+  const supabase = createSupabaseBrowserClient()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
