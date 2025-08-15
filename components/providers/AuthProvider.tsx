@@ -40,17 +40,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const getInitialSession = async () => {
-      const {data} = await supabase.auth.getUser();
+      const {data: {session}} = await supabase.auth.getSession();
      
-      if (!data?.user) {
+      if (!session?.user) {
         console.warn("Getting Initial Session: No user found")
         setLoading(false)
         return
       }
 
-      setUser(data.user)
+      setUser(session.user)
 
-      const {data: profile} = await supabase.from('profiles').select('*').eq('id', data?.user.id).single()
+      const {data: profile} = await supabase.from('profiles').select('*').eq('id', session?.user.id).single()
       
       if (!profile) {
         console.warn("Getting Initial Session: No profile found")
