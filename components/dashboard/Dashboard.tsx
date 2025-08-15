@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -9,8 +8,7 @@ import { SpotClaimModal } from '@/components/parking/SpotClaimModal'
 import { ParkingSpotWithOwner, AvailabilityWithSpot, ClaimWithDetails } from '@/types'
 import { useAuth } from '../providers/AuthProvider'
 
-export function Dashboard({ userFromServer }: { userFromServer: any }) {
-  console.log("USER FROM SERVER:", userFromServer)
+export function Dashboard() {
   const { user, profile, loading: authLoading } = useAuth()!
   const [mySpots, setMySpots] = useState<ParkingSpotWithOwner[]>([])
   const [availableSpots, setAvailableSpots] = useState<AvailabilityWithSpot[]>([])

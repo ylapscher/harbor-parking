@@ -18,10 +18,11 @@ const AuthContext = createContext<AuthContextType | null>(null)
 
 interface AuthProviderProps {
   children: React.ReactNode
+  initialUser: User | null
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null)
+export function AuthProvider({ children, initialUser }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(initialUser)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createSupabaseBrowserClient()
@@ -34,6 +35,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       .select('*')
       .eq('id', user.id)
       .single()
+
+    if (!profile) {
+      console.warn("Refreshing Profile: No profile found")
+      return
+    }
 
     setProfile(profile)
   }
@@ -69,7 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })  
     
     return () => subscription.unsubscribe()
-  }, [supabase])
+  }, [supabase, initialUser])
 
 
 
