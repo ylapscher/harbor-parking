@@ -24,16 +24,5 @@ export function createSupabaseBrowserClient() {
         eventsPerSecond: 2
       }
     },
-    global: {
-      fetch: (url, options = {}) => {
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 5000)
-        
-        return fetch(url, {
-          ...options,
-          signal: controller.signal
-        }).finally(() => clearTimeout(timeout))
-      }
-    }
   });
 }
