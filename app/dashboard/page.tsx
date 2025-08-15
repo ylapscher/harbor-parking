@@ -8,12 +8,10 @@ export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
 
-  console.log("USER FROM SERVER:", data.user);
-
   return (
     <RequireAuth>
       <Navigation />
-      <Dashboard />
+      <Dashboard userFromServer={data.user} />
     </RequireAuth>
   );
 }
