@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { ParkingSpotCard } from '@/components/parking/ParkingSpotCard'
 import { AvailabilityToggle } from '@/components/parking/AvailabilityToggle'
 import { SpotClaimModal } from '@/components/parking/SpotClaimModal'
 import { ParkingSpotWithOwner, AvailabilityWithSpot, ClaimWithDetails } from '@/types'
+import { useAuth } from '../providers/AuthProvider'
 
 export function Dashboard() {
-  const { user, profile, loading: authLoading } = useAuth()
+  const { user, profile, loading: authLoading } = useAuth()!
   const [mySpots, setMySpots] = useState<ParkingSpotWithOwner[]>([])
   const [availableSpots, setAvailableSpots] = useState<AvailabilityWithSpot[]>([])
   const [myClaims, setMyClaims] = useState<ClaimWithDetails[]>([])
@@ -26,7 +26,7 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  const supabase = getSupabaseClient()
+  const supabase = createSupabaseBrowserClient()
 
   const fetchData = useCallback(async () => {
     if (!user) return

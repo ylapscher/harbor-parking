@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Profile } from '@/types'
 
 interface ExtendedProfile extends Profile {
@@ -23,7 +23,7 @@ export function UserManagementTable({ users, onRefresh }: UserManagementTablePro
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const itemsPerPage = 10
 
-  const supabase = getSupabaseClient()
+  const supabase = createSupabaseBrowserClient()
 
   const handleUserAction = async (userId: string, action: 'approve' | 'reject' | 'make_admin' | 'remove_admin') => {
     setLoading(userId)

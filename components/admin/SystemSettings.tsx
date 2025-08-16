@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 interface SystemSettingsProps {
   onRefresh: () => void
@@ -20,7 +20,7 @@ export function SystemSettings({ onRefresh }: SystemSettingsProps) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
-  const supabase = getSupabaseClient()
+  const supabase = createSupabaseBrowserClient()
 
   const handleSettingChange = (key: keyof typeof settings, value: boolean | number) => {
     setSettings(prev => ({ ...prev, [key]: value }))

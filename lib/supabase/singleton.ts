@@ -5,7 +5,7 @@ let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null
 let supabaseAdminInstance: ReturnType<typeof createClient<Database>> | null = null
 let clientId = 0
 
-export function getSupabaseClient() {
+export function getSupabaseClientDeprecated() {
   if (!supabaseInstance) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY

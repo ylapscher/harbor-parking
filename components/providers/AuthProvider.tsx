@@ -2,39 +2,30 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/types'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 interface AuthContextType {
   user: User | null
   profile: Profile | null
   loading: boolean
-  signOut: () => Promise<void>
   isAdmin: boolean
   isApproved: boolean
   refreshProfile: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-export function useAuthContext() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuthContext must be used within an AuthProvider')
-  }
-  return context
-}
+const AuthContext = createContext<AuthContextType | null>(null)
 
 interface AuthProviderProps {
   children: React.ReactNode
+  initialUser: User | null
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null)
+export function AuthProvider({ children, initialUser }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(initialUser)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-
-  const supabase = createClient()
+  const supabase = createSupabaseBrowserClient()
 
   const refreshProfile = async () => {
     if (!user) return
@@ -45,72 +36,56 @@ export function AuthProvider({ children }: AuthProviderProps) {
       .eq('id', user.id)
       .single()
 
+    if (!profile) {
+      console.warn("Refreshing Profile: No profile found")
+      return
+    }
+
     setProfile(profile)
   }
 
   useEffect(() => {
-    // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (session?.user) {
-        setUser(session.user)
-        
-        // Fetch user profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
+      const {data: {session}} = await supabase.auth.getSession();
+     
+      if (!session?.user) {
+        console.warn("Getting Initial Session: No user found")
+        setLoading(false)
+        return
+      }
 
-        setProfile(profile)
+      setUser(session.user)
+
+      const {data: profile} = await supabase.from('profiles').select('*').eq('id', session?.user.id).single()
+      
+      if (!profile) {
+        console.warn("Getting Initial Session: No profile found")
+        setLoading(false)
+        return
       }
       
+      setProfile(profile)
       setLoading(false)
     }
-
+    
     getInitialSession()
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setLoading(true)
-        
-        if (session?.user) {
-          setUser(session.user)
-          
-          // Fetch user profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-
-          setProfile(profile)
-        } else {
-          setUser(null)
-          setProfile(null)
-        }
-        
-        setLoading(false)
-      }
-    )
-
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null)
+    })  
+    
     return () => subscription.unsubscribe()
-  }, [supabase])
+  }, [supabase, initialUser])
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
-  }
+
 
   const value: AuthContextType = {
     user,
     profile,
     loading,
-    signOut,
     isAdmin: profile?.is_admin || false,
     isApproved: profile?.is_approved || false,
-    refreshProfile,
+    refreshProfile
   }
 
   return (
@@ -118,4 +93,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       {children}
     </AuthContext.Provider>
   )
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuthContext must be used within an AuthProvider')
+  }
+  return context
 }

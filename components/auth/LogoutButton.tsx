@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 interface LogoutButtonProps {
   className?: string
@@ -20,7 +20,7 @@ export function LogoutButton({ className = '', children }: LogoutButtonProps) {
     localStorage.removeItem('harbor-login-success')
     localStorage.removeItem('harbor-user-email')
     
-    const supabase = getSupabaseClient()
+    const supabase = createSupabaseBrowserClient()
 
     try {
       await supabase.auth.signOut()

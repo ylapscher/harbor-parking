@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { ParkingSpot } from '@/types'
 
 interface SpotWithOwner extends ParkingSpot {
@@ -24,7 +24,7 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
   const [selectedSpots, setSelectedSpots] = useState<string[]>([])
   const itemsPerPage = 10
 
-  const supabase = getSupabaseClient()
+  const supabase = createSupabaseBrowserClient()
 
   const handleSpotAction = async (spotId: string, action: 'verify' | 'unverify' | 'delete') => {
     setLoading(spotId)

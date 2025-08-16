@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
 import { Profile } from '@/types'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 interface AuthState {
   user: User | null
   profile: Profile | null
   loading: boolean
 }
-
+// DEPRECATED THIS USEAUTH, USE USEAUTH FROM PROVIDER INSTEAD
 export function useAuth() {
   // Check for development bypass immediately
   const isDev = process.env.NODE_ENV === 'development'
@@ -44,9 +44,9 @@ export function useAuth() {
     loading: !(isDev && hasRecentLogin),
   })
 
-  let supabase: ReturnType<typeof getSupabaseClient>
+  let supabase: ReturnType<typeof createSupabaseBrowserClient>
   try {
-    supabase = getSupabaseClient()
+    supabase = createSupabaseBrowserClient()
   } catch (error) {
     console.error('Failed to create Supabase client:', error)
     // Return a non-loading state immediately if client creation fails

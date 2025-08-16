@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
+import { useAuth } from '../providers/AuthProvider'
 
 export function UserProfile() {
-  const { user, profile, refreshProfile } = useAuth()
+  // const { user, profile, refreshProfile } = useAuth()
+  const auth = useAuth()
+  const { user, profile, refreshProfile } = auth!
+  
   const [formData, setFormData] = useState({
     fullName: '',
     apartmentNumber: '',
@@ -15,7 +18,7 @@ export function UserProfile() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const supabase = getSupabaseClient()
+  const supabase = createSupabaseBrowserClient()
 
   useEffect(() => {
     if (profile) {

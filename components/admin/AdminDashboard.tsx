@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { getSupabaseClient } from '@/lib/supabase/singleton'
+import { useAuth } from '../providers/AuthProvider'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Profile, ParkingSpot } from '@/types'
 import { UserManagementTable } from './UserManagementTable'
 import { SpotVerificationTable } from './SpotVerificationTable'
@@ -42,7 +42,7 @@ interface Activity {
 }
 
 export function AdminDashboard() {
-  const { user } = useAuth()
+  const { user } = useAuth()!
   const [activeTab, setActiveTab] = useState('overview')
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
@@ -57,7 +57,7 @@ export function AdminDashboard() {
   const [recentActivity, setRecentActivity] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
 
-  const supabase = getSupabaseClient()
+  const supabase = createSupabaseBrowserClient()
 
   const fetchAdminData = useCallback(async () => {
     if (!user) return
