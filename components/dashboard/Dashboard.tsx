@@ -32,82 +32,82 @@ export function Dashboard() {
     if (!user) return
 
     // Check if we're in dev mode with dev user
-    const isDevMode = process.env.NODE_ENV === 'development' && user.id === 'dev-user-id'
+    // const isDevMode = process.env.NODE_ENV === 'development' && user.id === 'dev-user-id'
     
-    if (isDevMode) {
-      // Use mock data for development
-      console.log('🚀 Using mock data for development dashboard')
+    // if (isDevMode) {
+    //   // Use mock data for development
+    //   console.log('🚀 Using mock data for development dashboard')
       
-      const mockSpots = [
-        {
-          id: 'mock-spot-1',
-          spot_number: 'A101',
-          owner_id: 'dev-user-id',
-          building_section: 'North Tower',
-          is_verified: true,
-          profiles: {
-            full_name: "Dev One",
-            apartment_number: "101",
-            email: "dev-one@example.com",
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-      ]
+    //   const mockSpots = [
+    //     {
+    //       id: 'mock-spot-1',
+    //       spot_number: 'A101',
+    //       owner_id: 'dev-user-id',
+    //       is_active: true,
+    //       location: 'Dev One',
+    //       description: "Dev One's parking spot",
+    //       profiles: {
+    //         full_name: "Dev One",
+    //         apartment_number: "101",
+    //         email: "dev-one@example.com",
+    //       },
+    //       created_at: new Date().toISOString(),
+    //       updated_at: new Date().toISOString(),
+    //     }
+    //   ]
       
-      const mockAvailable = [
-        {
-          id: 'mock-availability-1',
-          spot_id: 'mock-spot-2',
-          start_time: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
-          end_time: new Date(Date.now() + 7200000).toISOString(), // 2 hours from now
-          notes: 'Available for visitors',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          parking_spots: {
-            id: 'mock-spot-2',
-            spot_number: 'B205',
-            building_section: 'South Tower',
-            owner_id: 'other-user-id',
-            is_verified: true,
-            profiles: {
-              full_name: "John Doe",
-              apartment_number: "205",
-              email: "john-doe@example.com",
-            },
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }
-        }
-      ]
+    //   const mockAvailable = [
+    //     {
+    //       id: 'mock-availability-1',
+    //       spot_id: 'mock-spot-2',
+    //       start_time: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+    //       end_time: new Date(Date.now() + 7200000).toISOString(), // 2 hours from now
+    //       notes: 'Available for visitors',
+    //       is_active: true,
+    //       created_at: new Date().toISOString(),
+    //       updated_at: new Date().toISOString(),
+    //       parking_spots: {
+    //         id: 'mock-spot-2',
+    //         spot_number: 'B205',
+    //         owner_id: 'other-user-id',
+    //         is_verified: true,
+    //         profiles: {
+    //           full_name: "John Doe",
+    //           apartment_number: "205",
+    //           email: "john-doe@example.com",
+    //         },
+    //         created_at: new Date().toISOString(),
+    //         updated_at: new Date().toISOString(),
+    //       }
+    //     }
+    //   ]
       
-      const mockClaims = [
-        {
-          id: 'mock-claim-1',
-          availability_id: 'mock-availability-2',
-          claimer_id: 'dev-user-id',
-          status: 'pending' as const,
-          notes: "",
-          profiles: {
-            full_name: "John Doe",
-            apartment_number: "205",
-            email: "john-doe@example.com",
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          availabilities: mockAvailable[0],
-          claimed_at: new Date().toISOString(),
-          expires_at: new Date().toISOString(),
-        }
-      ]
+    //   const mockClaims = [
+    //     {
+    //       id: 'mock-claim-1',
+    //       availability_id: 'mock-availability-2',
+    //       claimer_id: 'dev-user-id',
+    //       status: 'pending' as const,
+    //       notes: "",
+    //       profiles: {
+    //         full_name: "John Doe",
+    //         apartment_number: "205",
+    //         email: "john-doe@example.com",
+    //       },
+    //       created_at: new Date().toISOString(),
+    //       updated_at: new Date().toISOString(),
+    //       availabilities: mockAvailable[0],
+    //       claimed_at: new Date().toISOString(),
+    //       expires_at: new Date().toISOString(),
+    //     }
+    //   ]
       
-      setMySpots(mockSpots)
-      setAvailableSpots(mockAvailable)
-      setMyClaims(mockClaims)
-      setLoading(false)
-      return
-    }
+    //   setMySpots(mockSpots)
+    //   setAvailableSpots(mockAvailable)
+    //   setMyClaims(mockClaims)
+    //   setLoading(false)
+    //   return
+    // }
 
     try {
       // Try to fetch user's parking spots with simplified query first
@@ -182,40 +182,53 @@ export function Dashboard() {
     setError(null)
     setSuccess(null)
 
-try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-
-      if (!token) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
         window.location.href = '/login'
         return
       }
 
       // Use the API route instead of direct Supabase call
-      const response = await fetch('/api/parking-spots', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          spot_number: newSpotData.spotNumber,
-          location: newSpotData.nearestElevator,
-          notes: '' // Optional field
-        })
-      })
+      // const response = await fetch('/api/parking-spots', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${token}`
+      //   },
+      //   body: JSON.stringify({
+      //     spot_number: newSpotData.spotNumber,
+      //     location: newSpotData.nearestElevator,
+      //     notes: '' // Optional field
+      //   })
+      // })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        if (response.status === 409) {
-          setError('A parking spot with this number already exists. Please use a different spot number.')
-        } else {
-          setError(errorData.error || 'Failed to add parking spot')
-        }
+      const { data, error } =await supabase
+        .from('parking_spots')
+        .insert([
+          {
+            spot_number: newSpotData.spotNumber,
+            location: newSpotData.nearestElevator,
+            description: '',
+            owner_id: user.id,
+          }
+        ])
+        .select()
+
+      if (error) {
+        console.error("Error trying to add new parking spot:", error)
+        setError(error.message)
+        // const errorData = await response.json()
+        // if (response.status === 409) {
+        //   setError('A parking spot with this number already exists. Please use a different spot number.')
+        // } else {
+        //   setError(errorData.error || 'Failed to add parking spot')
+        // }
         return
       }
 
-      await response.json() // Get the response but don't store it since we refresh data anyway
+      // await response.json() // Get the response but don't store it since we refresh data anyway
 
       // Reset form and refresh data
       setNewSpotData({ spotNumber: '', nearestElevator: '' })
@@ -413,11 +426,11 @@ try {
                         Owner: {claim.availabilities?.parking_spots.profiles.full_name}
                       </p>
                       <p className="text-sm text-gray-400">
-                        Claimed: {new Date(claim.created_at).toLocaleDateString()}
+                        Claimed: {new Date(claim.created_at!).toLocaleDateString()}
                       </p>
                     </div>
-                    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${getClaimStatusColor(claim.status)}`}>
-                      {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
+                    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${getClaimStatusColor(claim.status!)}`}>
+                      {claim.status!.charAt(0).toUpperCase() + claim.status!.slice(1)}
                     </span>
                   </div>
                 </div>
