@@ -8,6 +8,7 @@ interface ParkingSpotCardProps {
   availability?: AvailabilityWithSpot
   onClaim?: (availabilityId: string) => void
   onToggleAvailability?: (spotId: string) => void
+  onDeleteSpot?: (spotId: string) => void
   isOwner?: boolean
   showActions?: boolean
   loading?: boolean
@@ -18,6 +19,7 @@ export function ParkingSpotCard({
   availability,
   onClaim,
   onToggleAvailability,
+  onDeleteSpot,
   isOwner = false,
   showActions = true,
   loading = false
@@ -150,8 +152,16 @@ export function ParkingSpotCard({
               >
                 {availability?.is_active ? 'Update Availability' : 'Set Available'}
               </button>
-              <button className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                View Claims
+              <button
+                onClick={() => {
+                  if (!onDeleteSpot) return
+                  if (confirm(`Remove Spot ${spotData.spot_number}? This cannot be undone.`)) {
+                    onDeleteSpot(spotData.id)
+                  }
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Remove Spot
               </button>
             </>
           ) : (
