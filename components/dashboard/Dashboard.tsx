@@ -199,6 +199,34 @@ export function Dashboard() {
     setShowClaimModal(true)
   }
 
+  const handleDeleteSpot = async (spotId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        window.location.href = '/login'
+        return
+      }
+
+      const response = await fetch('/api/parking-spots?id=' + encodeURIComponent(spotId), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to delete spot')
+      }
+
+      // Refresh dashboard data
+      await fetchData()
+    } catch (err) {
+      console.error('Failed to delete spot:', err)
+      alert((err as Error).message)
+    }
+  }
+
   const handleAddSpot = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user || !profile?.is_approved) return
@@ -402,6 +430,7 @@ export function Dashboard() {
                   spot={spot}
                   isOwner={true}
                   onToggleAvailability={handleToggleAvailability}
+                  onDeleteSpot={handleDeleteSpot}
                 />
               ))}
             </div>
