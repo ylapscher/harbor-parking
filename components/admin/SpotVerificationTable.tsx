@@ -2,17 +2,10 @@
 
 import { useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-import { ParkingSpot } from '@/types'
-
-interface SpotWithOwner extends ParkingSpot {
-  profiles: {
-    full_name: string
-    apartment_number: string
-  }
-}
+import { ParkingSpotWithOwner } from '@/types'
 
 interface SpotVerificationTableProps {
-  spots: SpotWithOwner[]
+  spots: ParkingSpotWithOwner[]
   onRefresh: () => void
 }
 
@@ -47,7 +40,7 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
         const { error } = await supabase
           .from('parking_spots')
           .update({
-            is_verified: action === 'verify',
+            is_active: action === 'verify',
             updated_at: new Date().toISOString(),
           })
           .eq('id', spotId)
@@ -86,7 +79,7 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
         const { error } = await supabase
           .from('parking_spots')
           .update({
-            is_verified: action === 'verify',
+            is_active: action === 'verify',
             updated_at: new Date().toISOString(),
           })
           .in('id', selectedSpots)
@@ -105,13 +98,13 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
 
   const filteredSpots = spots.filter(spot => {
     const matchesSearch = spot.spot_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         spot.building_section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         spot.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          spot.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          spot.profiles?.apartment_number?.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesStatus = statusFilter === 'all' ||
-                         (statusFilter === 'verified' && spot.is_verified) ||
-                         (statusFilter === 'unverified' && !spot.is_verified)
+                         (statusFilter === 'verified' && spot.is_active) ||
+                         (statusFilter === 'unverified' && !spot.is_active)
 
     return matchesSearch && matchesStatus
   })
@@ -258,23 +251,23 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
                     {spot.profiles?.apartment_number || 'Unknown'}
                   </td>
                   <td className="px-6 py-4 text-sm text-white">
-                    {spot.building_section || 'Not specified'}
+                    {spot.location || 'Not specified'}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      spot.is_verified
+                      spot.is_active
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {spot.is_verified ? 'Verified' : 'Unverified'}
+                      {spot.is_active ? 'Verified' : 'Unverified'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-400">
-                    {new Date(spot.created_at).toLocaleDateString()}
+                    {new Date(spot.created_at ?? 0).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      {!spot.is_verified ? (
+                      {!spot.is_active ? (
                         <button
                           onClick={() => handleSpotAction(spot.id, 'verify')}
                           disabled={loading === spot.id}

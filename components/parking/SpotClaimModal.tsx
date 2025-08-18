@@ -117,9 +117,9 @@ if (!response.ok) {
               <h3 className="text-lg font-semibold text-white">
                 Spot {availability.parking_spots.spot_number}
               </h3>
-              {availability.parking_spots.building_section && (
+              {availability.parking_spots.location && (
                 <p className="text-sm text-gray-400">
-                  Section: {availability.parking_spots.building_section}
+                  Location: {availability.parking_spots.location}
                 </p>
               )}
             </div>

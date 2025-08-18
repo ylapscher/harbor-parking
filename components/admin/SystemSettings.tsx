@@ -124,10 +124,10 @@ try {
         const { error } = await supabase
           .from('parking_spots')
           .update({ 
-            is_verified: false,
+            is_active: false,
             updated_at: new Date().toISOString()
           })
-          .eq('is_verified', true)
+          .eq('is_active', true)
 
         if (error) {
           console.error('Error resetting verifications:', error)

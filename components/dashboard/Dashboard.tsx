@@ -110,10 +110,17 @@ export function Dashboard() {
     // }
 
     try {
-      // Try to fetch user's parking spots with simplified query first
+      // Fetch user's parking spots with owner profile info
       const { data: spots } = await supabase
         .from('parking_spots')
-        .select('*')
+        .select(`
+          *,
+          profiles!parking_spots_owner_id_fkey(
+            full_name,
+            apartment_number,
+            email
+          )
+        `)
         .eq('owner_id', user.id)
         .order('spot_number', { ascending: true })
 
@@ -125,14 +132,12 @@ export function Dashboard() {
         .select(`
           *,
           parking_spots!inner (
-            id,
-            spot_number,
-            building_section,
-            owner_id,
+            *,
             profiles!inner (
               id,
               full_name,
-              apartment_number
+              apartment_number,
+              email
             )
           )
         `)
@@ -143,10 +148,29 @@ export function Dashboard() {
 
       setAvailableSpots(available || [])
 
-      // Try to fetch user's claims with simplified query
+      // Fetch user's claims with related availability and spot owner details
       const { data: claims } = await supabase
         .from('claims')
-        .select('*')
+        .select(`
+          *,
+          profiles!claims_claimer_id_fkey(
+            full_name,
+            apartment_number,
+            email
+          ),
+          availabilities!inner (
+            *,
+            parking_spots!inner (
+              *,
+              profiles!inner (
+                id,
+                full_name,
+                apartment_number,
+                email
+              )
+            )
+          )
+        `)
         .eq('claimer_id', user.id)
         .order('created_at', { ascending: false })
 

@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
       .insert({
         owner_id: user.id,
         spot_number,
-        building_section: location, // Map location to building_section
-        is_verified: false,
+        location,
+        is_active: true,
       })
       .select()
       .single()
@@ -205,11 +205,7 @@ export async function PUT(request: NextRequest) {
 
     const updatePayload: Record<string, string | undefined> = { ...validationResult.data }
     
-    // Map location to building_section if location is provided
-    if (updatePayload.location) {
-      updatePayload.building_section = updatePayload.location
-      delete updatePayload.location
-    }
+    // No mapping needed; location is a column in DB
 
     const { data: updatedSpot, error } = await supabase
       .from('parking_spots')

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../providers/AuthProvider'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-import { Profile, ParkingSpot } from '@/types'
+import { Profile, ParkingSpotWithOwner } from '@/types'
 import { UserManagementTable } from './UserManagementTable'
 import { SpotVerificationTable } from './SpotVerificationTable'
 import { ActivityMonitor } from './ActivityMonitor'
@@ -25,12 +25,6 @@ interface ExtendedProfile extends Profile {
   last_activity?: string
 }
 
-interface SpotWithOwner extends ParkingSpot {
-  profiles: {
-    full_name: string
-    apartment_number: string
-  }
-}
 
 interface Activity {
   type: string
@@ -53,7 +47,7 @@ export function AdminDashboard() {
     totalClaims: 0,
   })
   const [users, setUsers] = useState<ExtendedProfile[]>([])
-  const [spots, setSpots] = useState<SpotWithOwner[]>([])
+  const [spots, setSpots] = useState<ParkingSpotWithOwner[]>([])
   const [recentActivity, setRecentActivity] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -82,7 +76,8 @@ export function AdminDashboard() {
           *,
           profiles!parking_spots_owner_id_fkey(
             full_name,
-            apartment_number
+            apartment_number,
+            email
           )
         `)
         .order('created_at', { ascending: false })
@@ -120,8 +115,8 @@ export function AdminDashboard() {
       const totalUsers = usersData?.length || 0
       const pendingApprovals = usersData?.filter(u => !u.is_approved).length || 0
       const totalSpots = spotsData?.length || 0
-      const unverifiedSpots = spotsData?.filter(s => !s.is_verified).length || 0
-      const activeClaims = recentClaims?.filter(c => ['pending', 'confirmed'].includes(c.status)).length || 0
+      const unverifiedSpots = spotsData?.filter(s => !s.is_active).length || 0
+      const activeClaims = recentClaims?.filter(c => c.status === 'pending' || c.status === 'confirmed').length || 0
       const totalClaims = recentClaims?.length || 0
 
       setStats({
@@ -137,20 +132,20 @@ export function AdminDashboard() {
       setSpots(spotsData || [])
 
       // Combine and sort recent activity
-      const combinedActivity = [
+      const combinedActivity: Activity[] = [
         ...(recentClaims || []).map(claim => ({
           type: 'claim',
           id: claim.id,
-          created_at: claim.created_at,
-          user: claim.profiles?.full_name,
+          created_at: claim.created_at ?? new Date(0).toISOString(),
+          user: claim.profiles?.full_name ?? 'Unknown',
           description: `Claimed spot ${claim.availabilities?.parking_spots?.spot_number}`,
-          status: claim.status,
+          status: claim.status ?? 'unknown',
         })),
         ...(recentAvailabilities || []).map(availability => ({
           type: 'availability',
           id: availability.id,
-          created_at: availability.created_at,
-          user: availability.parking_spots?.profiles?.full_name,
+          created_at: availability.created_at ?? new Date(0).toISOString(),
+          user: availability.parking_spots?.profiles?.full_name ?? 'Unknown',
           description: `Made spot ${availability.parking_spots?.spot_number} available`,
           status: availability.is_active ? 'active' : 'inactive',
         })),
