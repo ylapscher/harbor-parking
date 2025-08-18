@@ -73,9 +73,9 @@ export function ParkingSpotCard({
           <h3 className="text-lg font-semibold text-white">
             Spot {spotData.spot_number}
           </h3>
-          {spotData.building_section && (
+          {spotData.location && (
             <span className="text-sm text-gray-400">
-              ({spotData.building_section})
+              ({spotData.location})
             </span>
           )}
         </div>
@@ -98,7 +98,7 @@ export function ParkingSpotCard({
               {isAvailable ? 'Available' : isExpired ? 'Expired' : 'Unavailable'}
             </span>
           )}
-          {spotData.is_verified ? (
+          {spotData.is_active ? (
             <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
               Verified
             </span>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Profile, ParkingSpot } from '@/types'
+import { Profile, ParkingSpotWithOwner } from '@/types'
 
 interface ExtendedProfile extends Profile {
   parking_spots_count?: number
@@ -9,12 +9,6 @@ interface ExtendedProfile extends Profile {
   last_activity?: string
 }
 
-interface SpotWithOwner extends ParkingSpot {
-  profiles: {
-    full_name: string
-    apartment_number: string
-  }
-}
 
 interface Activity {
   type: string
@@ -27,7 +21,7 @@ interface Activity {
 
 interface ExportPanelProps {
   users: ExtendedProfile[]
-  spots: SpotWithOwner[]
+  spots: ParkingSpotWithOwner[]
   activities: Activity[]
 }
 
@@ -99,8 +93,8 @@ export function ExportPanel({ users, spots, activities }: ExportPanelProps) {
           owner_id: spot.owner_id,
           owner_name: spot.profiles?.full_name,
           owner_apartment: spot.profiles?.apartment_number,
-          building_section: spot.building_section,
-          is_verified: spot.is_verified,
+          building_section: spot.location,
+          is_verified: spot.is_active,
           created_at: spot.created_at,
           updated_at: spot.updated_at,
         }))
@@ -137,7 +131,7 @@ export function ExportPanel({ users, spots, activities }: ExportPanelProps) {
             total_users: users.length,
             pending_approvals: users.filter(u => !u.is_approved).length,
             total_spots: spots.length,
-            unverified_spots: spots.filter(s => !s.is_verified).length,
+            unverified_spots: spots.filter(s => !s.is_active).length,
             total_activities: activities.length,
           },
           users: users.map(user => ({
@@ -159,8 +153,8 @@ export function ExportPanel({ users, spots, activities }: ExportPanelProps) {
             owner_id: spot.owner_id,
             owner_name: spot.profiles?.full_name,
             owner_apartment: spot.profiles?.apartment_number,
-            building_section: spot.building_section,
-            is_verified: spot.is_verified,
+            building_section: spot.location,
+            is_verified: spot.is_active,
             created_at: spot.created_at,
             updated_at: spot.updated_at,
           })),
@@ -186,8 +180,8 @@ export function ExportPanel({ users, spots, activities }: ExportPanelProps) {
   const generateSystemReport = () => {
     const approvedUsers = users.filter(u => u.is_approved)
     const pendingUsers = users.filter(u => !u.is_approved)
-    const verifiedSpots = spots.filter(s => s.is_verified)
-    const unverifiedSpots = spots.filter(s => !s.is_verified)
+    const verifiedSpots = spots.filter(s => s.is_active)
+    const unverifiedSpots = spots.filter(s => !s.is_active)
     const recentActivities = activities.slice(0, 10)
 
     return {
