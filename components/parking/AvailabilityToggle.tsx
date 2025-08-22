@@ -35,10 +35,21 @@ export function AvailabilityToggle({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }))
+    
+    if (type === 'checkbox' && name === 'isActive') {
+      const isChecked = (e.target as HTMLInputElement).checked
+      setFormData(prev => ({
+        ...prev,
+        isActive: isChecked,
+        // If making immediately available, set start time to now
+        startTime: isChecked ? new Date().toISOString().slice(0, 16) : prev.startTime
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,7 +75,8 @@ export function AvailabilityToggle({
         return
       }
 
-      if (startDate < new Date()) {
+      // Only validate start time if not making immediately available
+      if (!formData.isActive && startDate < new Date()) {
         setError('Start time cannot be in the past')
         return
       }
@@ -194,8 +206,11 @@ if (!response.ok) {
               type="datetime-local"
               value={formData.startTime}
               onChange={handleInputChange}
-              required
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              disabled={formData.isActive}
+              required={!formData.isActive}
+              className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                formData.isActive ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             />
           </div>
 

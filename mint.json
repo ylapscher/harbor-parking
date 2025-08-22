@@ -14,7 +14,7 @@
   "topbarLinks": [
     {
       "name": "Live App",
-      "url": "https://harbor-parking.vercel.app"
+      "url": "https://parking.lapscher.com"
     }
   ],
   "topbarCtaButton": {
@@ -35,7 +35,7 @@
     {
       "name": "Live Demo",
       "icon": "globe",
-      "url": "https://harbor-parking.vercel.app"
+      "url": "https://parking.lapscher.com"
     },
     {
       "name": "GitHub",
@@ -143,13 +143,9 @@
     "github": "https://github.com/ylapscher/harbor-parking",
     "linkedin": "https://www.linkedin.com/company/mintlify"
   },
-  "openapi": [
-    {
-      "url": "openapi.yaml"
-    }
-  ],
+  "openapi": "openapi.yaml",
   "api": {
-    "baseUrl": "https://harbor-parking.vercel.app/api",
+    "baseUrl": "https://parking.lapscher.com/api",
     "auth": {
       "method": "bearer"
     },
