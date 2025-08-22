@@ -390,6 +390,17 @@ export function Dashboard() {
           </div>
         )}
 
+        {/* Pending Spot Approvals Warning */}
+        {mySpots.some(spot => !spot.is_verified) && (
+          <div className="bg-blue-900 bg-opacity-50 border border-blue-700 rounded-lg p-4">
+            <h3 className="text-blue-200 font-medium mb-2">Parking Spots Pending Approval</h3>
+            <p className="text-blue-300 text-sm">
+              You have {mySpots.filter(spot => !spot.is_verified).length} parking spot(s) pending approval from an administrator. 
+              These spots will be available for sharing once approved.
+            </p>
+          </div>
+        )}
+
         {/* My Parking Spots */}
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
           <div className="flex justify-between items-center mb-6">

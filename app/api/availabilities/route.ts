@@ -4,15 +4,23 @@ import { z } from 'zod'
 
 const CreateAvailabilitySchema = z.object({
   spot_id: z.string().uuid('Invalid spot ID'),
-  start_time: z.string().datetime('Invalid start time format'),
-  end_time: z.string().datetime('Invalid end time format'),
+  start_time: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid start time format'
+  }),
+  end_time: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid end time format'
+  }),
   notes: z.string().optional(),
   is_active: z.boolean().default(true),
 })
 
 const UpdateAvailabilitySchema = z.object({
-  start_time: z.string().datetime('Invalid start time format').optional(),
-  end_time: z.string().datetime('Invalid end time format').optional(),
+  start_time: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid start time format'
+  }).optional(),
+  end_time: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid end time format'
+  }).optional(),
   notes: z.string().optional(),
   is_active: z.boolean().optional(),
 })
@@ -40,7 +48,7 @@ async function getAuthenticatedUser(request: NextRequest) {
   }
 }
 
-function validateTimeRange(startTime: string, endTime: string) {
+function validateTimeRange(startTime: string, endTime: string, isActive: boolean = true) {
   const start = new Date(startTime)
   const end = new Date(endTime)
   const now = new Date()
@@ -49,7 +57,12 @@ function validateTimeRange(startTime: string, endTime: string) {
     return 'End time must be after start time'
   }
 
-  if (start < now) {
+  // Allow a small tolerance (5 minutes) for immediately active availabilities
+  // to account for network latency and processing time
+  const tolerance = isActive ? 5 * 60 * 1000 : 0 // 5 minutes in milliseconds
+  const cutoffTime = new Date(now.getTime() - tolerance)
+
+  if (start < cutoffTime) {
     return 'Start time cannot be in the past'
   }
 
@@ -139,7 +152,7 @@ export async function POST(request: NextRequest) {
     const { spot_id, start_time, end_time, notes, is_active } = validationResult.data
 
     // Validate time range
-    const timeError = validateTimeRange(start_time, end_time)
+    const timeError = validateTimeRange(start_time, end_time, is_active)
     if (timeError) {
       return NextResponse.json(
         { error: timeError },
@@ -161,6 +174,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Parking spot not found or you do not have permission to create availability for it' },
         { status: 404 }
+      )
+    }
+
+    // Check if the spot is verified
+    if (!spot.is_verified) {
+      return NextResponse.json(
+        { error: 'Cannot create availability for unverified parking spots. Please wait for admin approval.' },
+        { status: 403 }
       )
     }
 
@@ -266,7 +287,8 @@ export async function PUT(request: NextRequest) {
     if (validationResult.data.start_time && validationResult.data.end_time) {
       const timeError = validateTimeRange(
         validationResult.data.start_time,
-        validationResult.data.end_time
+        validationResult.data.end_time,
+        validationResult.data.is_active ?? availability.is_active ?? true
       )
       if (timeError) {
         return NextResponse.json(

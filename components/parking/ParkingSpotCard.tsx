@@ -100,13 +100,13 @@ export function ParkingSpotCard({
               {isAvailable ? 'Available' : isExpired ? 'Expired' : 'Unavailable'}
             </span>
           )}
-          {spotData.is_active ? (
+          {spotData.is_verified ? (
             <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
               Verified
             </span>
           ) : (
             <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-              Pending
+              Pending Approval
             </span>
           )}
         </div>

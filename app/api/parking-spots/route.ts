@@ -125,13 +125,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if this is the user's first spot
+    const { data: existingSpots } = await supabase
+      .from('parking_spots')
+      .select('id')
+      .eq('owner_id', user.id)
+
+    const isFirstSpot = !existingSpots || existingSpots.length === 0
+
     const { data: newSpot, error } = await supabase
       .from('parking_spots')
       .insert({
         owner_id: user.id,
         spot_number,
         location,
-        is_active: true,
+        is_verified: isFirstSpot, // Auto-verify first spot, require approval for additional spots
+        is_active: isFirstSpot, // Only active if verified
       })
       .select()
       .single()

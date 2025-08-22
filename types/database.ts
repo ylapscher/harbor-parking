@@ -107,6 +107,7 @@ export interface Database {
           spot_number: string
           location: string | null
           is_active: boolean | null
+          is_verified: boolean | null
           description: string | null
           created_at: string | null
           updated_at: string | null
@@ -116,6 +117,7 @@ export interface Database {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_verified?: boolean | null
           location?: string | null
           owner_id: string
           spot_number: string
@@ -126,6 +128,7 @@ export interface Database {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_verified?: boolean | null
           location?: string | null
           owner_id?: string
           spot_number?: string
