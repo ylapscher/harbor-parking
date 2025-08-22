@@ -518,6 +518,7 @@ export function Dashboard() {
                 <ParkingSpotCard
                   key={availability.id}
                   availability={availability}
+                  disabled={!profile?.is_approved}
                   onClaim={() => {
                     fetchData()
                     setSuccess('Spot claimed successfully!')
