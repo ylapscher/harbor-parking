@@ -7,7 +7,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 interface ParkingSpotCardProps {
   spot?: ParkingSpotWithOwner
   availability?: AvailabilityWithSpot
-  onClaim?: (availabilityId: string) => void
+  onClaim?: (availabilityId: string) => Promise<void>
   onToggleAvailability?: (spotId: string) => void
   onDeleteSpot?: (spotId: string) => void
   isOwner?: boolean

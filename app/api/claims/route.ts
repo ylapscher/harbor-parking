@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const CreateClaimSchema = z.object({
   availability_id: z.string().uuid('Invalid availability ID'),
@@ -91,7 +92,8 @@ if (error) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(request)
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
@@ -114,7 +116,6 @@ export async function POST(request: NextRequest) {
     }
 
     const { availability_id, notes } = validationResult.data
-    const supabase = getSupabaseAdmin()
 
     // Check if availability exists and is still active
     const { data: availability } = await supabase

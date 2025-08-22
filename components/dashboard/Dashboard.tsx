@@ -211,7 +211,15 @@ export function Dashboard() {
     setShowAvailabilityModal(true)
   }
 
-
+  const handleClaim = (availabilityId: string) => {
+    const availability = availableSpots.find(a => a.id === availabilityId)
+    if (!availability) {
+      setError('Availability not found')
+      return
+    }
+    setSelectedAvailability(availability || null)
+    setShowClaimModal(true)
+  }
 
   const handleReleaseClaim = async (claimId: string) => {
     try {
@@ -520,12 +528,9 @@ export function Dashboard() {
                   key={availability.id}
                   availability={availability}
                   disabled={!profile?.is_approved}
-                  onClaim={() => {
-                    fetchData()
-                    setSuccess('Spot claimed successfully!')
-                    setTimeout(() => setSuccess(null), 3000)
-                    setShowClaimModal(false)
-                    setSelectedAvailability(null)
+                  onClaim={async (availabilityId) => {
+                    await fetchData()
+                    handleClaim(availabilityId)
                   }}
                 />
               ))}
