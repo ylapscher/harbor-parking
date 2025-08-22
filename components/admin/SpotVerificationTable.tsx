@@ -12,7 +12,7 @@ interface SpotVerificationTableProps {
 export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTableProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'unverified'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'pending'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedSpots, setSelectedSpots] = useState<string[]>([])
   const itemsPerPage = 10
@@ -40,7 +40,8 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
         const { error } = await supabase
           .from('parking_spots')
           .update({
-            is_active: action === 'verify',
+            is_verified: action === 'verify',
+            is_active: action === 'verify', // Only active if verified
             updated_at: new Date().toISOString(),
           })
           .eq('id', spotId)
@@ -79,7 +80,8 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
         const { error } = await supabase
           .from('parking_spots')
           .update({
-            is_active: action === 'verify',
+            is_verified: action === 'verify',
+            is_active: action === 'verify', // Only active if verified
             updated_at: new Date().toISOString(),
           })
           .in('id', selectedSpots)
@@ -103,8 +105,8 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
                          spot.profiles?.apartment_number?.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesStatus = statusFilter === 'all' ||
-                         (statusFilter === 'verified' && spot.is_active) ||
-                         (statusFilter === 'unverified' && !spot.is_active)
+                         (statusFilter === 'verified' && spot.is_verified) ||
+                         (statusFilter === 'pending' && !spot.is_verified)
 
     return matchesSearch && matchesStatus
   })
@@ -153,7 +155,7 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
                 disabled={loading === 'bulk'}
                 className="bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
               >
-                Bulk Unverify
+                Bulk Reject
               </button>
               <button
                 onClick={() => handleBulkAction('delete')}
@@ -179,12 +181,12 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
           
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as 'all' | 'verified' | 'unverified')}
+            onChange={(e) => setStatusFilter(e.target.value as 'all' | 'verified' | 'pending')}
             className="px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="all">All Spots</option>
             <option value="verified">Verified</option>
-            <option value="unverified">Unverified</option>
+            <option value="pending">Pending Approval</option>
           </select>
         </div>
       </div>
@@ -255,11 +257,11 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      spot.is_active
+                      spot.is_verified
                         ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {spot.is_active ? 'Verified' : 'Unverified'}
+                      {spot.is_verified ? 'Verified' : 'Pending Approval'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-400">
@@ -267,13 +269,13 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      {!spot.is_active ? (
+                      {!spot.is_verified ? (
                         <button
                           onClick={() => handleSpotAction(spot.id, 'verify')}
                           disabled={loading === spot.id}
                           className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-2 py-1 rounded text-xs font-medium transition-colors"
                         >
-                          {loading === spot.id ? '...' : 'Verify'}
+                          {loading === spot.id ? '...' : 'Approve'}
                         </button>
                       ) : (
                         <button
@@ -281,7 +283,7 @@ export function SpotVerificationTable({ spots, onRefresh }: SpotVerificationTabl
                           disabled={loading === spot.id}
                           className="bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-white px-2 py-1 rounded text-xs font-medium transition-colors"
                         >
-                          {loading === spot.id ? '...' : 'Unverify'}
+                          {loading === spot.id ? '...' : 'Reject'}
                         </button>
                       )}
                       
