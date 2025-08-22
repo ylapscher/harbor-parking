@@ -116,7 +116,7 @@ export function AdminDashboard() {
       const pendingApprovals = usersData?.filter(u => !u.is_approved).length || 0
       const totalSpots = spotsData?.length || 0
       const unverifiedSpots = spotsData?.filter(s => !s.is_active).length || 0
-      const activeClaims = recentClaims?.filter(c => c.status === 'pending' || c.status === 'confirmed').length || 0
+      const activeClaims = recentClaims?.filter(c => c.status === 'confirmed').length || 0
       const totalClaims = recentClaims?.length || 0
 
       setStats({

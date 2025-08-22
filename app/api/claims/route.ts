@@ -153,13 +153,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user already has a pending or confirmed claim for this availability
+    // Check if user already has a confirmed claim for this availability
     const { data: existingClaim } = await supabase
       .from('claims')
       .select('*')
       .eq('availability_id', availability_id)
       .eq('claimer_id', user.id)
-      .in('status', ['pending', 'confirmed'])
+      .eq('status', 'confirmed')
       .single()
 
     if (existingClaim) {
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
       .insert({
         availability_id,
         claimer_id: user.id,
-        status: 'pending',
+        status: 'confirmed',
         notes: notes || null,
       })
       .select()
@@ -280,13 +280,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Only spot owners can confirm claims
-    if (validationResult.data.status === 'confirmed' && !isOwner) {
-      return NextResponse.json(
-        { error: 'Only the spot owner can confirm claims' },
-        { status: 403 }
-      )
-    }
+    // Claims are automatically confirmed when created, so no special owner permissions needed
 
     // If confirming, make sure no other claim is already confirmed for this availability
     if (validationResult.data.status === 'confirmed') {

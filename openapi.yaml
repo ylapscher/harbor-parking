@@ -128,7 +128,7 @@ paths:
                   availableSpots: 5
                   activeClaims: 1
                   totalClaims: 3
-                  pendingClaimsOnMySpots: 2
+            
                   confirmedClaimsOnMySpots: 1
                 mySpots: []
                 availableSpots: []
@@ -916,9 +916,7 @@ components:
             totalClaims:
               type: integer
               description: Total number of claims by user
-            pendingClaimsOnMySpots:
-              type: integer
-              description: Number of pending claims on user's spots
+            
             confirmedClaimsOnMySpots:
               type: integer
               description: Number of confirmed claims on user's spots

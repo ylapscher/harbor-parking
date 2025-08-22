@@ -40,13 +40,31 @@ export function ParkingSpotCard({
   if (!spotData) return null
 
   const formatTime = (timeString: string) => {
-    return new Date(timeString).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
+    const date = new Date(timeString)
+    const now = new Date()
+    const isToday = date.toDateString() === now.toDateString()
+    const isTomorrow = date.toDateString() === new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString()
+    
+    const timeStr = date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
     })
+    
+    if (isToday) {
+      return `Today at ${timeStr}`
+    } else if (isTomorrow) {
+      return `Tomorrow at ${timeStr}`
+    } else {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
+    }
   }
 
   const isAvailable = availability?.is_active && new Date(availability.end_time) > new Date()
@@ -100,15 +118,7 @@ export function ParkingSpotCard({
               {isAvailable ? 'Available' : isExpired ? 'Expired' : 'Unavailable'}
             </span>
           )}
-          {spotData.is_verified ? (
-            <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-              Verified
-            </span>
-          ) : (
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-              Pending Approval
-            </span>
-          )}
+
         </div>
       </div>
 
@@ -128,9 +138,9 @@ export function ParkingSpotCard({
             <span className="text-sm font-medium text-gray-300">Available Window</span>
           </div>
           <div className="text-sm text-gray-400">
-            <div className="flex flex-col sm:flex-row sm:justify-between">
-              <span>From: {formatTime(availability.start_time)}</span>
-              <span>Until: {formatTime(availability.end_time)}</span>
+            <div className="flex flex-col space-y-1">
+              <span>Available from {formatTime(availability.start_time)}</span>
+              <span>until {formatTime(availability.end_time)}</span>
             </div>
           </div>
           {availability.notes && (
@@ -181,9 +191,7 @@ export function ParkingSpotCard({
                   {claiming ? 'Claiming...' : 'Claim Spot'}
                 </button>
               )}
-              <button className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                Contact Owner
-              </button>
+
             </>
           )}
         </div>

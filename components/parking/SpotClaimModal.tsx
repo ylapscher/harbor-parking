@@ -185,8 +185,8 @@ if (!response.ok) {
         {/* Claim Policy */}
         <div className="mb-6 p-3 bg-blue-900 bg-opacity-50 border border-blue-700 rounded">
           <p className="text-sm text-blue-200">
-            <strong>Claim Policy:</strong> Your claim will expire in 2 hours if not confirmed by the owner. 
-            You&apos;ll receive notifications about the status of your claim.
+            <strong>Claim Policy:</strong> This is a first-come-first-served system. Once you claim this spot, it&apos;s yours for the specified time period. 
+            No owner confirmation is required.
           </p>
         </div>
 
