@@ -322,7 +322,8 @@ export function Dashboard() {
             location: newSpotData.nearestElevator,
             description: '',
             owner_id: user.id,
-            is_active: false
+            is_active: false,
+            is_verified: profile.is_admin || false
           }
         ])
         .select()
