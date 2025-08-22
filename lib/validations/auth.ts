@@ -21,7 +21,8 @@ export const registerSchema = z.object({
     .string()
     .regex(/^\+?[\d\s-()]+$/, "Please enter a valid phone number")
     .optional()
-    .or(z.literal("")),
+    .or(z.literal(""))
+    .nullable(),
 })
 
 export const loginSchema = z.object({
