@@ -44,7 +44,7 @@ export function AvailabilityToggle({
         ...prev,
         isActive: isChecked,
         // If making immediately available, set start time to now
-        startTime: isChecked ? new Date().toISOString().slice(0, 16) : prev.startTime
+        startTime: isChecked ? new Date().toISOString().slice(0, 16) : ''
       }))
     } else {
       setFormData(prev => ({
@@ -78,8 +78,14 @@ export function AvailabilityToggle({
         return
       }
       
+      // If making immediately available and no start time, set it to now
+      let finalStartTime = formData.startTime
+      if (formData.isActive && !formData.startTime) {
+        finalStartTime = new Date().toISOString().slice(0, 16)
+      }
+      
       // Validate required fields
-      if (!formData.startTime) {
+      if (!finalStartTime) {
         setError('Start time is required')
         return
       }
@@ -90,7 +96,7 @@ export function AvailabilityToggle({
       }
       
       // Validate times
-      const startDate = new Date(formData.startTime)
+      const startDate = new Date(finalStartTime)
       const endDate = new Date(formData.endTime)
       
       if (isNaN(startDate.getTime())) {
@@ -124,7 +130,7 @@ export function AvailabilityToggle({
           },
           body: JSON.stringify({
             id: currentAvailability.id,
-            start_time: new Date(formData.startTime).toISOString(),
+            start_time: new Date(finalStartTime).toISOString(),
             end_time: new Date(formData.endTime).toISOString(),
             notes: formData.notes,
             is_active: formData.isActive
@@ -145,7 +151,7 @@ if (!response.ok) {
           },
           body: JSON.stringify({
             spot_id: spotId,
-            start_time: new Date(formData.startTime).toISOString(),
+            start_time: new Date(finalStartTime).toISOString(),
             end_time: new Date(formData.endTime).toISOString(),
             notes: formData.notes,
             is_active: formData.isActive
