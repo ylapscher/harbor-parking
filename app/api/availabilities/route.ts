@@ -137,9 +137,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('Received availability creation request:', body)
+    
     const validationResult = CreateAvailabilitySchema.safeParse(body)
 
     if (!validationResult.success) {
+      console.error('Validation failed:', validationResult.error.format())
       return NextResponse.json(
         { 
           error: 'Validation failed',

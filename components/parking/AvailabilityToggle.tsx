@@ -68,9 +68,40 @@ export function AvailabilityToggle({
     }
 
     try {
+      // Debug logging
+      console.log('Form data:', formData)
+      console.log('Spot verified:', spotVerified)
+      
+      // Check if spot is verified
+      if (!spotVerified) {
+        setError('Cannot create availability for unverified parking spots. Please wait for admin approval.')
+        return
+      }
+      
+      // Validate required fields
+      if (!formData.startTime) {
+        setError('Start time is required')
+        return
+      }
+      
+      if (!formData.endTime) {
+        setError('End time is required')
+        return
+      }
+      
       // Validate times
       const startDate = new Date(formData.startTime)
       const endDate = new Date(formData.endTime)
+      
+      if (isNaN(startDate.getTime())) {
+        setError('Invalid start time format')
+        return
+      }
+      
+      if (isNaN(endDate.getTime())) {
+        setError('Invalid end time format')
+        return
+      }
       
       if (endDate <= startDate) {
         setError('End time must be after start time')
@@ -93,8 +124,8 @@ export function AvailabilityToggle({
           },
           body: JSON.stringify({
             id: currentAvailability.id,
-            start_time: formData.startTime,
-            end_time: formData.endTime,
+            start_time: new Date(formData.startTime).toISOString(),
+            end_time: new Date(formData.endTime).toISOString(),
             notes: formData.notes,
             is_active: formData.isActive
           })
@@ -114,16 +145,17 @@ if (!response.ok) {
           },
           body: JSON.stringify({
             spot_id: spotId,
-            start_time: formData.startTime,
-            end_time: formData.endTime,
+            start_time: new Date(formData.startTime).toISOString(),
+            end_time: new Date(formData.endTime).toISOString(),
             notes: formData.notes,
             is_active: formData.isActive
           })
         })
 
-if (!response.ok) {
+        if (!response.ok) {
           const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to create availability')
+          console.error('API Error:', errorData)
+          throw new Error(errorData.error || errorData.details || 'Failed to create availability')
         }
       }
 
