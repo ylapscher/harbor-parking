@@ -1,0 +1,257 @@
+# Get Dashboard
+
+Retrieve comprehensive dashboard data including user statistics, parking spots, and claims.
+
+## Endpoint
+
+```
+GET /dashboard
+```
+
+## Authentication
+
+This endpoint requires authentication. Include your JWT token in the Authorization header:
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Response
+
+### Success Response (200 OK)
+
+```json
+{
+  "stats": {
+    "mySpots": 3,
+    "availableSpots": 12,
+    "activeClaims": 1,
+    "totalClaims": 5,
+    "confirmedClaimsOnMySpots": 2
+  },
+  "mySpots": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "spot_number": "A-15",
+      "location": "Level 2 Parking Garage",
+      "notes": "Near elevator",
+      "is_verified": true,
+      "is_active": true,
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "availableSpots": [
+    {
+      "id": "789e0123-e89b-12d3-a456-426614174002",
+      "start_time": "2024-01-20T09:00:00Z",
+      "end_time": "2024-01-20T18:00:00Z",
+      "notes": "Available while at work",
+      "is_active": true,
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z",
+      "parking_spots": {
+        "id": "456e7890-e89b-12d3-a456-426614174001",
+        "spot_number": "B-23",
+        "location": "Level 1 Parking Garage",
+        "notes": "Near entrance",
+        "profiles": {
+          "id": "789e0123-e89b-12d3-a456-426614174003",
+          "full_name": "Jane Smith",
+          "apartment_number": "15B"
+        }
+      }
+    }
+  ],
+  "myClaims": [
+    {
+      "id": "abc12345-e89b-12d3-a456-426614174004",
+      "availability_id": "789e0123-e89b-12d3-a456-426614174002",
+      "claimer_id": "123e4567-e89b-12d3-a456-426614174000",
+      "status": "confirmed",
+      "notes": "Need spot for meeting",
+      "created_at": "2024-01-15T11:00:00Z",
+      "updated_at": "2024-01-15T11:00:00Z",
+      "availabilities": {
+        "id": "789e0123-e89b-12d3-a456-426614174002",
+        "start_time": "2024-01-20T09:00:00Z",
+        "end_time": "2024-01-20T18:00:00Z",
+        "notes": "Available while at work",
+        "parking_spots": {
+          "id": "456e7890-e89b-12d3-a456-426614174001",
+          "spot_number": "B-23",
+          "location": "Level 1 Parking Garage",
+          "profiles": {
+            "id": "789e0123-e89b-12d3-a456-426614174003",
+            "full_name": "Jane Smith",
+            "apartment_number": "15B"
+          }
+        }
+      }
+    }
+  ],
+  "claimsOnMySpots": [
+    {
+      "id": "def67890-e89b-12d3-a456-426614174005",
+      "availability_id": "789e0123-e89b-12d3-a456-426614174006",
+      "claimer_id": "789e0123-e89b-12d3-a456-426614174003",
+      "status": "confirmed",
+      "notes": "Need spot for visitors",
+      "created_at": "2024-01-15T12:00:00Z",
+      "updated_at": "2024-01-15T12:00:00Z",
+      "profiles": {
+        "id": "789e0123-e89b-12d3-a456-426614174003",
+        "full_name": "Jane Smith",
+        "apartment_number": "15B"
+      },
+      "availabilities": {
+        "id": "789e0123-e89b-12d3-a456-426614174006",
+        "start_time": "2024-01-21T10:00:00Z",
+        "end_time": "2024-01-21T16:00:00Z",
+        "notes": "Available for sharing",
+        "parking_spots": {
+          "id": "123e4567-e89b-12d3-a456-426614174000",
+          "spot_number": "A-15",
+          "location": "Level 2 Parking Garage"
+        }
+      }
+    }
+  ]
+}
+```
+
+### Error Responses
+
+#### 401 Unauthorized
+
+```json
+{
+  "error": "Authentication required"
+}
+```
+
+#### 403 Forbidden
+
+```json
+{
+  "error": "Account not approved"
+}
+```
+
+## Example
+
+### cURL
+
+```bash
+curl -X GET "https://parking.lapscher.com/api/dashboard" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### JavaScript
+
+```javascript
+const response = await fetch('https://parking.lapscher.com/api/dashboard', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+
+const dashboard = await response.json();
+```
+
+### Python
+
+```python
+import requests
+
+response = requests.get(
+    'https://parking.lapscher.com/api/dashboard',
+    headers={
+        'Authorization': f'Bearer {token}'
+    }
+)
+
+dashboard = response.json()
+```
+
+## Response Fields
+
+### Stats Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `mySpots` | number | Number of parking spots owned by the user |
+| `availableSpots` | number | Number of spots currently available for claiming |
+| `activeClaims` | number | Number of active claims by the user |
+| `totalClaims` | number | Total number of claims by the user |
+| `confirmedClaimsOnMySpots` | number | Number of confirmed claims on user's spots |
+
+### My Spots Array
+
+Each spot object contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique spot identifier |
+| `spot_number` | string | Spot number or identifier |
+| `location` | string | Location description |
+| `notes` | string | Optional notes about the spot |
+| `is_verified` | boolean | Whether the spot is verified by admin |
+| `is_active` | boolean | Whether the spot is active |
+| `created_at` | string | Creation timestamp |
+| `updated_at` | string | Last update timestamp |
+
+### Available Spots Array
+
+Each availability object contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique availability identifier |
+| `start_time` | string | Availability start time |
+| `end_time` | string | Availability end time |
+| `notes` | string | Optional notes from the owner |
+| `is_active` | boolean | Whether the availability is active |
+| `created_at` | string | Creation timestamp |
+| `updated_at` | string | Last update timestamp |
+| `parking_spots` | object | Associated parking spot details |
+| `parking_spots.profiles` | object | Spot owner's profile information |
+
+### My Claims Array
+
+Each claim object contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique claim identifier |
+| `availability_id` | string | ID of the claimed availability |
+| `claimer_id` | string | ID of the user who made the claim |
+| `status` | string | Claim status (confirmed, cancelled, expired, released) |
+| `notes` | string | Optional notes about the claim |
+| `created_at` | string | Creation timestamp |
+| `updated_at` | string | Last update timestamp |
+| `availabilities` | object | Associated availability details |
+
+### Claims On My Spots Array
+
+Each claim object contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique claim identifier |
+| `availability_id` | string | ID of the claimed availability |
+| `claimer_id` | string | ID of the user who made the claim |
+| `status` | string | Claim status |
+| `notes` | string | Optional notes about the claim |
+| `created_at` | string | Creation timestamp |
+| `updated_at` | string | Last update timestamp |
+| `profiles` | object | Claimer's profile information |
+| `availabilities` | object | Associated availability details |
+
+## Notes
+
+- Only approved users can access the dashboard
+- Available spots exclude the user's own spots
+- Claims are sorted by creation date (newest first)
+- All timestamps are in ISO 8601 format
+- The dashboard provides a comprehensive overview of the user's parking activity

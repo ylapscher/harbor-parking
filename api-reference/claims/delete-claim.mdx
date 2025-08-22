@@ -1,0 +1,80 @@
+---
+title: 'Delete Claim'
+api: 'DELETE /claims'
+description: 'Delete a claim (claimers can delete their own claims, spot owners can delete claims for their spots)'
+---
+
+Delete a claim. Claimers can delete their own claims, and spot owners can delete claims for their parking spots. If no other confirmed claims exist for the availability, it will be reactivated.
+
+## Request
+
+<RequestExample>
+```bash
+curl -X DELETE "https://parking.lapscher.com/api/claims?id=123e4567-e89b-12d3-a456-426614174000" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+</RequestExample>
+
+### Query Parameters
+
+<ParamField query="id" type="string" format="uuid" required={true}>
+  ID of the claim to delete
+</ParamField>
+
+## Response
+
+<ResponseExample>
+```json
+{
+  "message": "Claim deleted successfully"
+}
+```
+</ResponseExample>
+
+### Response Fields
+
+<ResponseField name="message" type="string">
+  Success message confirming the claim was deleted
+</ResponseField>
+
+## Error Responses
+
+<ResponseExample status="400">
+```json
+{
+  "error": "Claim ID is required"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="401">
+```json
+{
+  "error": "Authentication required"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="403">
+```json
+{
+  "error": "You do not have permission to delete this claim"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="404">
+```json
+{
+  "error": "Claim not found"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="500">
+```json
+{
+  "error": "Failed to delete claim"
+}
+```
+</ResponseExample>

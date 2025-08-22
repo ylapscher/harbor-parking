@@ -226,7 +226,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_production_service_key
 - **GitHub Issues**: [Report bugs and request features](https://github.com/ylapscher/harbor-parking/issues)
 - **Discussions**: [Community support](https://github.com/ylapscher/harbor-parking/discussions)
 - **Documentation**: [Mintlify Support](https://mintlify.com/docs)
-- **Application**: [Harbor Parking Live Demo](https://harbor-parking.vercel.app)
+- **Application**: [Harbor Parking Live Demo](https://parking.lapscher.com)
 
 ---
 

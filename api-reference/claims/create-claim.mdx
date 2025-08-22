@@ -1,0 +1,125 @@
+---
+title: 'Create Claim'
+api: 'POST /claims'
+description: 'Create a new claim for an available parking spot'
+---
+
+Create a new claim to reserve an available parking spot. The claim will initially have a `pending` status and must be confirmed by the spot owner.
+
+## Request
+
+<RequestExample>
+```bash
+curl -X POST "https://parking.lapscher.com/api/claims" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "availability_id": "456e7890-e89b-12d3-a456-426614174000",
+    "notes": "Need spot for meeting"
+  }'
+```
+</RequestExample>
+
+### Request Body
+
+<ParamField body="availability_id" type="string" format="uuid" required={true}>
+  ID of the availability you want to claim
+</ParamField>
+
+<ParamField body="notes" type="string" required={false}>
+  Optional notes about your claim (e.g., reason for needing the spot)
+</ParamField>
+
+## Response
+
+<ResponseExample>
+```json
+{
+  "claim": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "availability_id": "456e7890-e89b-12d3-a456-426614174000",
+    "claimer_id": "789e0123-e89b-12d3-a456-426614174000",
+    "status": "pending",
+    "notes": "Need spot for meeting",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+</ResponseExample>
+
+### Response Fields
+
+<ResponseField name="claim" type="object">
+  The created claim object
+</ResponseField>
+
+<ResponseField name="claim.id" type="string" format="uuid">
+  Unique identifier for the claim
+</ResponseField>
+
+<ResponseField name="claim.availability_id" type="string" format="uuid">
+  ID of the availability being claimed
+</ResponseField>
+
+<ResponseField name="claim.claimer_id" type="string" format="uuid">
+  ID of the user who made the claim
+</ResponseField>
+
+<ResponseField name="claim.status" type="string">
+  Status of the claim (will be `pending` initially)
+</ResponseField>
+
+<ResponseField name="claim.notes" type="string">
+  Notes provided with the claim
+</ResponseField>
+
+<ResponseField name="claim.created_at" type="string" format="date-time">
+  Timestamp when the claim was created
+</ResponseField>
+
+<ResponseField name="claim.updated_at" type="string" format="date-time">
+  Timestamp when the claim was last updated
+</ResponseField>
+
+## Error Responses
+
+<ResponseExample status="400">
+```json
+{
+  "error": "Invalid availability ID"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="401">
+```json
+{
+  "error": "Authentication required"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="404">
+```json
+{
+  "error": "Availability not found"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="409">
+```json
+{
+  "error": "Availability is not active or already claimed"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="500">
+```json
+{
+  "error": "Failed to create claim"
+}
+```
+</ResponseExample>

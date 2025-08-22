@@ -60,6 +60,14 @@ export function Navigation() {
                   Admin
                 </button>
               )}
+              <a
+                href="https://lapscher.mintlify.app/api-reference/introduction"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                API Docs
+              </a>
             </div>
           </div>
 
@@ -134,6 +142,15 @@ export function Navigation() {
                   Admin
                 </button>
               )}
+              <a
+                href="https://lapscher.mintlify.app/api-reference/introduction"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors"
+              >
+                API Docs
+              </a>
               <div className="border-t border-gray-700 pt-4">
                 <div className="flex items-center px-3 mb-3">
                   <div className="text-sm text-gray-300">

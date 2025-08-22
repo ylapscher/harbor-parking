@@ -1,0 +1,53 @@
+# Parking Spots
+
+Parking spots are the core entities in the Harbor Parking system. Each spot represents a physical parking location within a building that can be shared by residents.
+
+## Structure
+
+A parking spot contains the following information:
+
+- **Spot Number**: Unique identifier for the spot (e.g., "A-15", "B-23")
+- **Location**: Description of where the spot is located (e.g., "Level 2 Parking Garage", "Near Elevator 3")
+- **Owner**: The resident who registered the spot
+- **Verification Status**: Whether the spot has been approved by building management
+- **Active Status**: Whether the spot is currently available for sharing
+
+## Registration Process
+
+1. **Resident Registration**: A resident registers their parking spot with basic information
+2. **Admin Verification**: Building management verifies the spot details
+3. **Activation**: Once verified, the spot becomes available for sharing
+
+## Ownership
+
+- Each spot has one owner (the resident who registered it)
+- Only the owner can create availability windows for their spot
+- Owners can update spot details or remove the spot entirely
+
+## Sharing Model
+
+- **Owner Control**: Spot owners decide when their spot is available
+- **Time Windows**: Owners set specific time periods when their spot can be claimed
+- **First-Come-First-Served**: Available spots can be claimed by any resident on a first-come-first-served basis
+
+## Example
+
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "spot_number": "A-15",
+  "location": "Level 2 Parking Garage",
+  "owner_id": "456e7890-e89b-12d3-a456-426614174001",
+  "is_verified": true,
+  "is_active": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z"
+}
+```
+
+## API Endpoints
+
+- `GET /parking-spots` - List all parking spots
+- `POST /parking-spots` - Register a new parking spot
+- `PUT /parking-spots` - Update spot details
+- `DELETE /parking-spots` - Remove a parking spot

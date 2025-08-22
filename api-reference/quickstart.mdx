@@ -44,13 +44,13 @@ Before getting started, make sure you have:
 <CodeGroup>
 
 ```bash cURL
-curl -X GET "https://harbor-parking.vercel.app/api/profile" \
+curl -X GET "https://parking.lapscher.com/api/profile" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://harbor-parking.vercel.app/api/profile', {
+const response = await fetch('https://parking.lapscher.com/api/profile', {
   method: 'GET',
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN',
@@ -65,7 +65,7 @@ console.log(profileData);
 ```python Python
 import requests
 
-url = "https://harbor-parking.vercel.app/api/profile"
+url = "https://parking.lapscher.com/api/profile"
 headers = {
     "Authorization": "Bearer YOUR_JWT_TOKEN",
     "Content-Type": "application/json"
@@ -78,7 +78,7 @@ print(profile_data)
 
 ```php PHP
 <?php
-$url = 'https://harbor-parking.vercel.app/api/profile';
+$url = 'https://parking.lapscher.com/api/profile';
 $headers = [
     'Authorization: Bearer YOUR_JWT_TOKEN',
     'Content-Type: application/json'
@@ -135,7 +135,7 @@ Now that you've made your first request, try these common workflows:
 <CodeGroup>
 
 ```bash cURL
-curl -X POST "https://harbor-parking.vercel.app/api/parking-spots" \
+curl -X POST "https://parking.lapscher.com/api/parking-spots" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -146,7 +146,7 @@ curl -X POST "https://harbor-parking.vercel.app/api/parking-spots" \
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://harbor-parking.vercel.app/api/parking-spots', {
+const response = await fetch('https://parking.lapscher.com/api/parking-spots', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN',
@@ -170,7 +170,7 @@ console.log(spotData);
 <CodeGroup>
 
 ```bash cURL
-curl -X POST "https://harbor-parking.vercel.app/api/availabilities" \
+curl -X POST "https://parking.lapscher.com/api/availabilities" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -183,7 +183,7 @@ curl -X POST "https://harbor-parking.vercel.app/api/availabilities" \
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://harbor-parking.vercel.app/api/availabilities', {
+const response = await fetch('https://parking.lapscher.com/api/availabilities', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN',
@@ -209,7 +209,7 @@ console.log(availabilityData);
 <CodeGroup>
 
 ```bash cURL
-curl -X POST "https://harbor-parking.vercel.app/api/claims" \
+curl -X POST "https://parking.lapscher.com/api/claims" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -219,7 +219,7 @@ curl -X POST "https://harbor-parking.vercel.app/api/claims" \
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://harbor-parking.vercel.app/api/claims', {
+const response = await fetch('https://parking.lapscher.com/api/claims', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN',
@@ -242,13 +242,13 @@ console.log(claimData);
 <CodeGroup>
 
 ```bash cURL
-curl -X GET "https://harbor-parking.vercel.app/api/dashboard" \
+curl -X GET "https://parking.lapscher.com/api/dashboard" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://harbor-parking.vercel.app/api/dashboard', {
+const response = await fetch('https://parking.lapscher.com/api/dashboard', {
   method: 'GET',
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN',

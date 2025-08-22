@@ -38,7 +38,7 @@ import { HarborParkingClient } from '@harbor-parking/sdk';
 
 // Initialize client
 const client = new HarborParkingClient({
-  baseUrl: 'https://harbor-parking.vercel.app/api',
+  baseUrl: 'https://parking.lapscher.com/api',
   // Token will be set after authentication
 });
 
@@ -286,7 +286,7 @@ try {
 
 ```typescript
 const client = new HarborParkingClient({
-  baseUrl: 'https://harbor-parking.vercel.app/api',
+  baseUrl: 'https://parking.lapscher.com/api',
   onError: (error) => {
     // Log to analytics
     analytics.track('api_error', {
@@ -463,7 +463,7 @@ export async function getBuilingStats() {
 import { HarborParkingClient, MemoryCache } from '@harbor-parking/sdk';
 
 const client = new HarborParkingClient({
-  baseUrl: 'https://harbor-parking.vercel.app/api',
+  baseUrl: 'https://parking.lapscher.com/api',
   cache: new MemoryCache({
     ttl: 300000, // 5 minutes
     maxSize: 100

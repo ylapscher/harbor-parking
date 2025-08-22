@@ -1,0 +1,137 @@
+---
+title: 'Release Claim'
+api: 'PATCH /claims'
+description: 'Release a confirmed claim to make the parking spot available again (only claimers can release their own claims)'
+---
+
+Release a confirmed claim to make the parking spot available again for others to claim. Only the claimer can release their own claims, and only confirmed claims can be released. The availability window must still be active.
+
+## Request
+
+<RequestExample>
+```bash
+curl -X PATCH "https://parking.lapscher.com/api/claims" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "action": "release"
+  }'
+```
+</RequestExample>
+
+### Request Body
+
+<ParamField body="id" type="string" format="uuid" required={true}>
+  ID of the claim to release
+</ParamField>
+
+<ParamField body="action" type="string" required={true}>
+  Action to perform. Must be `"release"`.
+</ParamField>
+
+## Response
+
+<ResponseExample>
+```json
+{
+  "message": "Spot released successfully",
+  "claim": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "status": "released"
+  }
+}
+```
+</ResponseExample>
+
+### Response Fields
+
+<ResponseField name="message" type="string">
+  Success message confirming the spot was released
+</ResponseField>
+
+<ResponseField name="claim" type="object">
+  Information about the released claim
+</ResponseField>
+
+<ResponseField name="claim.id" type="string" format="uuid">
+  ID of the released claim
+</ResponseField>
+
+<ResponseField name="claim.status" type="string">
+  New status of the claim (will be `"released"`)
+</ResponseField>
+
+## Error Responses
+
+<ResponseExample status="400">
+```json
+{
+  "error": "Claim ID is required"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="400">
+```json
+{
+  "error": "Invalid action. Use \"release\" to release a claimed spot."
+}
+```
+</ResponseExample>
+
+<ResponseExample status="400">
+```json
+{
+  "error": "Only confirmed claims can be released"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="400">
+```json
+{
+  "error": "Cannot release claim - availability window has expired"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="401">
+```json
+{
+  "error": "Authentication required"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="403">
+```json
+{
+  "error": "You can only release your own claims"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="404">
+```json
+{
+  "error": "Claim not found"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="500">
+```json
+{
+  "error": "Failed to release claim"
+}
+```
+</ResponseExample>
+
+## Notes
+
+- Only confirmed claims can be released
+- Only the claimer can release their own claims
+- The availability window must still be active (not expired)
+- When a claim is released, the availability becomes active again if no other confirmed claims exist
+- The claim status changes from `confirmed` to `released`

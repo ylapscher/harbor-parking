@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "contact": {
       "name": "Harbor Parking Support",
-      "email": "support@harbor-parking.com"
+      "email": "yoel@lapscher.com"
     },
     "license": {
       "name": "MIT",
@@ -15,7 +15,7 @@
   },
   "servers": [
     {
-      "url": "https://harbor-parking.vercel.app/api",
+      "url": "https://parking.lapscher.com/api",
       "description": "Production server"
     },
     {
@@ -755,6 +755,115 @@
           }
         }
       },
+      "patch": {
+        "tags": ["Claims"],
+        "summary": "Release claimed spot",
+        "description": "Release a confirmed claim to make the parking spot available again (only claimers can release their own claims)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the claim to release"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": ["release"],
+                    "description": "Action to perform (must be 'release')"
+                  }
+                },
+                "required": ["id", "action"]
+              },
+              "example": {
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "action": "release"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spot released successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Spot released successfully"
+                    },
+                    "claim": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["released"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - claim cannot be released",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "examples": [
+                        "Claim ID is required",
+                        "Invalid action. Use \"release\" to release a claimed spot.",
+                        "Only confirmed claims can be released",
+                        "Cannot release claim - availability window has expired"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - user can only release their own claims",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "You can only release your own claims"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
       "delete": {
         "tags": ["Claims"],
         "summary": "Delete claim",
@@ -1022,7 +1131,7 @@
       },
       "ClaimStatus": {
         "type": "string",
-        "enum": ["pending", "confirmed", "expired", "cancelled"],
+        "enum": ["pending", "confirmed", "released", "expired", "cancelled"],
         "description": "Status of a parking spot claim"
       },
       "UpdateProfileRequest": {

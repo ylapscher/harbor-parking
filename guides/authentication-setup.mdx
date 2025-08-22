@@ -1,0 +1,125 @@
+# Authentication Setup
+
+This guide explains how to set up authentication for the Harbor Parking API using JWT tokens.
+
+## Overview
+
+The Harbor Parking API uses JWT (JSON Web Token) authentication for all protected endpoints. Users must authenticate to access most API functionality.
+
+## Authentication Flow
+
+### 1. User Registration
+
+First, users need to create an account:
+
+```bash
+curl -X POST "https://parking.lapscher.com/api/auth/signup" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "securepassword123",
+    "full_name": "John Doe",
+    "apartment_number": "12A"
+  }'
+```
+
+### 2. User Login
+
+After registration, users can log in to get their JWT token:
+
+```bash
+curl -X POST "https://parking.lapscher.com/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "securepassword123"
+  }'
+```
+
+Response:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "user@example.com"
+  }
+}
+```
+
+### 3. Using the Token
+
+Include the JWT token in the Authorization header for all API requests:
+
+```bash
+curl -X GET "https://parking.lapscher.com/api/profile" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+## Token Management
+
+### Token Expiration
+
+- **Access Token**: Valid for 1 hour
+- **Refresh Token**: Valid for 7 days
+
+### Refreshing Tokens
+
+When the access token expires, use the refresh token to get a new one:
+
+```bash
+curl -X POST "https://parking.lapscher.com/api/auth/refresh" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }'
+```
+
+### Logout
+
+To invalidate tokens:
+
+```bash
+curl -X POST "https://parking.lapscher.com/api/auth/logout" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+## Account Approval
+
+After registration, accounts require approval from building management:
+
+- **Pending**: Account created but not yet approved
+- **Approved**: Account approved and can use all features
+- **Rejected**: Account rejected (contact building management)
+
+## Error Handling
+
+### Common Authentication Errors
+
+- `401 Unauthorized`: Missing or invalid token
+- `403 Forbidden`: Account not approved or insufficient permissions
+- `422 Unprocessable Entity`: Invalid email/password format
+
+### Example Error Response
+
+```json
+{
+  "error": "Invalid credentials",
+  "details": {
+    "email": "Invalid email format"
+  }
+}
+```
+
+## Security Best Practices
+
+1. **Secure Storage**: Store tokens securely (not in localStorage for production)
+2. **Token Rotation**: Use refresh tokens to get new access tokens
+3. **HTTPS Only**: Always use HTTPS in production
+4. **Token Validation**: Validate tokens on the client side
+5. **Logout**: Always logout when the user session ends
+
+## SDK Integration
+
+Most SDKs handle authentication automatically. See the [SDK documentation](/sdks/javascript) for language-specific examples.

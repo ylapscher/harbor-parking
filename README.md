@@ -13,7 +13,7 @@ A modern resident parking spot sharing platform that transforms chaotic WhatsApp
 
 ## 🚀 Live Demo
 
-[Visit Harbor Parking](https://harbor-parking.vercel.app) (if deployed)
+[Visit Harbor Parking](https://parking.lapscher.com) (if deployed)
 
 ## 🛠️ Technology Stack
 
