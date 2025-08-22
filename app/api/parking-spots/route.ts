@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { getHttpStatusFromSupabaseError, formatSupabaseError } from '@/lib/utils/supabase-errors'
 
@@ -246,7 +247,8 @@ if (error) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(request)
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
@@ -264,8 +266,6 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const supabase = getSupabaseAdmin()
 
     // Check if spot exists and user owns it
     const { data: existingSpot } = await supabase

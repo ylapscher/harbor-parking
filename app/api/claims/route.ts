@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
@@ -13,32 +12,12 @@ const UpdateClaimSchema = z.object({
   notes: z.string().optional(),
 })
 
-async function getAuthenticatedUser(request: NextRequest) {
-  const supabase = getSupabaseAdmin()
-  
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { user: null, error: 'No authorization token provided' }
-  }
 
-  const token = authHeader.substring(7)
-  
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser(token)
-    
-    if (error || !user) {
-      return { user: null, error: 'Invalid or expired token' }
-    }
-    
-    return { user, error: null }
-  } catch {
-    return { user: null, error: 'Failed to authenticate user' }
-  }
-}
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(request)
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
@@ -47,7 +26,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseAdmin()
     const { searchParams } = new URL(request.url)
     
     const claimerId = searchParams.get('claimer_id')
@@ -230,7 +208,8 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(request)
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
@@ -260,8 +239,6 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const supabase = getSupabaseAdmin()
 
     // Check if claim exists and get related data
     const { data: claim } = await supabase
@@ -503,7 +480,8 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(request)
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
@@ -521,8 +499,6 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const supabase = getSupabaseAdmin()
 
     // Check if claim exists and get related data
     const { data: claim } = await supabase

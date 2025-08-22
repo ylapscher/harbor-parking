@@ -343,7 +343,8 @@ if (error) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(request)
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
@@ -361,8 +362,6 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const supabase = getSupabaseAdmin()
 
     // Check if availability exists and user owns the spot
     const { data: availability } = await supabase

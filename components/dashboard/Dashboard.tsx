@@ -233,7 +233,6 @@ export function Dashboard() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           id: claimId,
@@ -267,9 +266,6 @@ export function Dashboard() {
 
       const response = await fetch('/api/parking-spots?id=' + encodeURIComponent(spotId), {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
       })
 
       if (!response.ok) {
