@@ -372,7 +372,8 @@ export async function PUT(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(request)
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
@@ -397,8 +398,6 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const supabase = getSupabaseAdmin()
 
     // Check if claim exists and get related data
     const { data: claim } = await supabase
