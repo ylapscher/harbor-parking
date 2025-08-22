@@ -35,6 +35,17 @@ export function AvailabilityToggle({
 
   const supabase = createSupabaseBrowserClient()
 
+  // Helper function to get current local time in datetime-local format
+  const getCurrentLocalTime = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hours = String(now.getHours()).padStart(2, '0')
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
     
@@ -44,7 +55,7 @@ export function AvailabilityToggle({
         ...prev,
         isActive: isChecked,
         // If making immediately available, set start time to now
-        startTime: isChecked ? new Date().toISOString().slice(0, 16) : ''
+        startTime: isChecked ? getCurrentLocalTime() : ''
       }))
     } else {
       setFormData(prev => ({
@@ -70,6 +81,7 @@ export function AvailabilityToggle({
     try {
       // Debug logging
       console.log('Form data:', formData)
+      console.log('Current local time:', getCurrentLocalTime())
       console.log('Spot verified:', spotVerified)
       
       // Check if spot is verified
@@ -81,8 +93,11 @@ export function AvailabilityToggle({
       // If making immediately available and no start time, set it to now
       let finalStartTime = formData.startTime
       if (formData.isActive && !formData.startTime) {
-        finalStartTime = new Date().toISOString().slice(0, 16)
+        finalStartTime = getCurrentLocalTime()
       }
+      
+      // Debug logging for final start time
+      console.log('Final start time:', finalStartTime)
       
       // Validate required fields
       if (!finalStartTime) {

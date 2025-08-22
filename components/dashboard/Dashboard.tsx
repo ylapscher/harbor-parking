@@ -204,6 +204,42 @@ export function Dashboard() {
     setShowClaimModal(true)
   }
 
+  const handleReleaseClaim = async (claimId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        window.location.href = '/login'
+        return
+      }
+
+      const response = await fetch('/api/claims', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          id: claimId,
+          action: 'release'
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to release spot')
+      }
+
+      // Refresh dashboard data
+      await fetchData()
+      setSuccess('Spot released successfully!')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      console.error('Failed to release spot:', err)
+      setError((err as Error).message)
+      setTimeout(() => setError(null), 5000)
+    }
+  }
+
   const handleDeleteSpot = async (spotId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -305,6 +341,7 @@ export function Dashboard() {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800'
       case 'confirmed': return 'bg-green-100 text-green-800'
+      case 'released': return 'bg-blue-100 text-blue-800'
       case 'expired': return 'bg-gray-100 text-gray-800'
       case 'cancelled': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
@@ -497,10 +534,25 @@ export function Dashboard() {
                       <p className="text-sm text-gray-400">
                         Claimed: {new Date(claim.created_at!).toLocaleDateString()}
                       </p>
+                      {claim.status === 'confirmed' && (
+                        <p className="text-sm text-gray-400">
+                          Available until: {new Date(claim.availabilities?.end_time || '').toLocaleString()}
+                        </p>
+                      )}
                     </div>
-                    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${getClaimStatusColor(claim.status!)}`}>
-                      {claim.status!.charAt(0).toUpperCase() + claim.status!.slice(1)}
-                    </span>
+                    <div className="flex flex-col items-end space-y-2">
+                      <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${getClaimStatusColor(claim.status!)}`}>
+                        {claim.status!.charAt(0).toUpperCase() + claim.status!.slice(1)}
+                      </span>
+                      {claim.status === 'confirmed' && (
+                        <button
+                          onClick={() => handleReleaseClaim(claim.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                        >
+                          Release Spot
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

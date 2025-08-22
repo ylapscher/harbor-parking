@@ -18,6 +18,14 @@ export default function Home() {
               <h1 className="text-white text-xl font-bold">Harbor Parking</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <a
+                href="https://lapscher.mintlify.app/api-reference/introduction"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                API Docs
+              </a>
               <button
                 onClick={() => {
                   setShowSignup(false)
@@ -301,6 +309,22 @@ export default function Home() {
                 <div>harbor-parking@example.com</div>
                 <div>Building Management</div>
                 <div>Resident Services</div>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-white font-medium mb-4">Developers</h4>
+              <div className="space-y-2 text-gray-300 text-sm">
+                <a 
+                  href="https://lapscher.mintlify.app/api-reference/introduction"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  API Documentation
+                </a>
+                <div>OpenAPI Specification</div>
+                <div>Interactive Playground</div>
               </div>
             </div>
           </div>

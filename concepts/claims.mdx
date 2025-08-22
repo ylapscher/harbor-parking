@@ -1,0 +1,92 @@
+---
+title: 'Claims'
+description: 'Understanding parking spot claims and their lifecycle'
+---
+
+# Claims
+
+Claims represent a user's request to use a parking spot during a specific availability window. The claim system ensures fair and organized parking spot sharing within the community.
+
+## Claim Lifecycle
+
+### 1. **Pending** 
+- Initial state when a user creates a claim
+- Waiting for spot owner to confirm or reject
+- The availability remains active for other potential claims
+
+### 2. **Confirmed**
+- Spot owner has approved the claim
+- The availability becomes inactive (no longer available for new claims)
+- The claimer can now use the parking spot during the specified time window
+- **Claimers can release confirmed claims early** if they finish using the spot
+
+### 3. **Released** ⭐ *New*
+- Claimer has released the spot early (before the availability window ends)
+- The availability becomes active again for others to claim
+- Only confirmed claims can be released
+- Only the claimer can release their own claims
+
+### 4. **Expired**
+- The availability window has passed
+- Claim automatically expires if not used
+- No longer actionable
+
+### 5. **Cancelled**
+- Claim was cancelled by either the claimer or spot owner
+- The availability becomes active again if it was previously confirmed
+
+## Claim Permissions
+
+### Claimers
+- Can create claims for available spots
+- Can update their own claims (notes, etc.)
+- Can release their own confirmed claims early
+- Can delete their own claims
+- Cannot release claims that are not confirmed
+- Cannot release claims if the availability window has expired
+
+### Spot Owners
+- Can confirm or reject pending claims for their spots
+- Can update claims for their spots (status changes)
+- Can delete claims for their spots
+- Cannot release claims (only claimers can release their own claims)
+
+## Early Release Feature
+
+The **Release Claim** feature allows claimers to return spots early, making them available again for others. This improves parking spot utilization and community efficiency.
+
+### When to Release
+- You finish using the spot before the availability window ends
+- You no longer need the spot
+- You want to help others who might need parking
+
+### Release Rules
+- ✅ Only confirmed claims can be released
+- ✅ Only the claimer can release their own claims
+- ✅ Availability window must still be active
+- ❌ Cannot release pending, expired, or cancelled claims
+- ❌ Cannot release claims after the availability window has expired
+
+### What Happens When Released
+1. Claim status changes from `confirmed` to `released`
+2. Availability becomes active again (if no other confirmed claims exist)
+3. Other users can now claim the spot
+4. Original availability window end time is still respected
+
+## API Endpoints
+
+- `GET /claims` - List claims with optional filtering
+- `POST /claims` - Create a new claim
+- `PUT /claims` - Update an existing claim
+- `PATCH /claims` - Release a confirmed claim ⭐ *New*
+- `DELETE /claims` - Delete a claim
+
+## Example Workflow
+
+1. **User A** creates a claim for Spot 12 (2:00 PM - 6:00 PM)
+2. **Owner** confirms the claim
+3. **User A** uses the spot from 2:00 PM to 4:00 PM
+4. **User A** releases the claim early
+5. **User B** can now claim Spot 12 for the remaining time (4:00 PM - 6:00 PM)
+
+This system ensures maximum parking spot utilization while maintaining fair access for all community members.

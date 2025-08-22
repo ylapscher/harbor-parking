@@ -543,6 +543,146 @@ export function DashboardScreen() {
 
 ## Integration Testing
 
+### 5. Early Spot Release Workflow ⭐ *New*
+
+```javascript
+// Release a confirmed claim early (when user finishes using spot)
+async function releaseClaimEarly(token, claimId) {
+  try {
+    const response = await fetch('/api/claims', {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: claimId,
+        action: 'release'
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to release claim');
+    }
+
+    const { message, claim } = await response.json();
+    console.log(`Spot released: ${message}`);
+    return claim;
+  } catch (error) {
+    console.error('Failed to release claim:', error);
+    throw error;
+  }
+}
+
+// Complete workflow: Claim, use, and release early
+async function completeSpotUsageWorkflow(token, availabilityId) {
+  try {
+    // 1. Create a claim
+    const claim = await createClaim(token, availabilityId, 'Need spot for meeting');
+    console.log('Claim created:', claim.status); // 'pending'
+    
+    // 2. Wait for owner confirmation (in real app, this would be async)
+    // For demo purposes, we'll assume it's confirmed
+    const confirmedClaim = await updateClaimStatus(token, claim.id, 'confirmed');
+    console.log('Claim confirmed:', confirmedClaim.status); // 'confirmed'
+    
+    // 3. Use the spot (simulate usage)
+    console.log('Using parking spot...');
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate 2 seconds of usage
+    
+    // 4. Release early (finished using spot)
+    const releasedClaim = await releaseClaimEarly(token, claim.id);
+    console.log('Spot released early:', releasedClaim.status); // 'released'
+    
+    return releasedClaim;
+  } catch (error) {
+    console.error('Workflow failed:', error);
+    throw error;
+  }
+}
+
+// Monitor claim status changes
+async function monitorClaimStatus(token, claimId) {
+  const checkStatus = async () => {
+    const response = await fetch(`/api/claims?id=${claimId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const { claims } = await response.json();
+    const claim = claims.find(c => c.id === claimId);
+    
+    return claim?.status;
+  };
+  
+  // Check status every 30 seconds
+  const interval = setInterval(async () => {
+    const status = await checkStatus();
+    console.log(`Claim status: ${status}`);
+    
+    if (status === 'released' || status === 'expired' || status === 'cancelled') {
+      clearInterval(interval);
+      console.log('Claim lifecycle completed');
+    }
+  }, 30000);
+  
+  return interval;
+}
+
+// Example: Handle early release in mobile app
+class ParkingSpotManager {
+  constructor(token) {
+    this.token = token;
+    this.activeClaims = new Map();
+  }
+  
+  async startUsingSpot(claimId) {
+    // Start monitoring the claim
+    const interval = await monitorClaimStatus(this.token, claimId);
+    this.activeClaims.set(claimId, { interval, startTime: Date.now() });
+    
+    console.log(`Started using spot for claim ${claimId}`);
+  }
+  
+  async finishUsingSpot(claimId) {
+    try {
+      // Release the claim early
+      await releaseClaimEarly(this.token, claimId);
+      
+      // Stop monitoring
+      const claimData = this.activeClaims.get(claimId);
+      if (claimData?.interval) {
+        clearInterval(claimData.interval);
+      }
+      this.activeClaims.delete(claimId);
+      
+      console.log(`Finished using spot for claim ${claimId}`);
+      
+      // Notify user
+      this.showNotification('Spot released early - available for others!');
+      
+    } catch (error) {
+      console.error('Failed to finish using spot:', error);
+      this.showNotification('Failed to release spot. Please try again.');
+    }
+  }
+  
+  showNotification(message) {
+    // Implementation depends on platform (React Native, etc.)
+    console.log(`Notification: ${message}`);
+  }
+}
+
+// Usage example
+const spotManager = new ParkingSpotManager(userToken);
+
+// Start using a spot
+await spotManager.startUsingSpot('claim-123');
+
+// Later, when finished using the spot
+await spotManager.finishUsingSpot('claim-123');
+```
+
 ### Test Utilities
 
 ```javascript

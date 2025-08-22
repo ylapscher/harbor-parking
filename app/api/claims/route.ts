@@ -8,7 +8,7 @@ const CreateClaimSchema = z.object({
 })
 
 const UpdateClaimSchema = z.object({
-  status: z.enum(['pending', 'confirmed', 'expired', 'cancelled']).optional(),
+  status: z.enum(['pending', 'confirmed', 'expired', 'cancelled', 'released']).optional(),
   notes: z.string().optional(),
 })
 
@@ -184,6 +184,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+        // Create the claim and deactivate the availability in a transaction
     const { data: newClaim, error } = await supabase
       .from('claims')
       .insert({
@@ -195,12 +196,26 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-if (error) {
+    if (error) {
       console.error('Error creating claim:', error)
       return NextResponse.json(
         { error: error.message || 'Failed to create claim' },
         { status: error.code === '42501' ? 403 : error.code === '23505' ? 409 : 500 }
       )
+    }
+
+    // Deactivate the availability since it's now claimed
+    const { error: availabilityError } = await supabase
+      .from('availabilities')
+      .update({ 
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', availability_id)
+
+    if (availabilityError) {
+      console.error('Error deactivating availability:', availabilityError)
+      // Don't fail the request, but log the error
     }
 
     return NextResponse.json({ claim: newClaim }, { status: 201 })
@@ -300,7 +315,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const { data: updatedClaim, error } = await supabase
+        const { data: updatedClaim, error } = await supabase
       .from('claims')
       .update({
         ...validationResult.data,
@@ -310,7 +325,7 @@ export async function PUT(request: NextRequest) {
       .select()
       .single()
 
-if (error) {
+    if (error) {
       console.error('Error updating claim:', error)
       return NextResponse.json(
         { error: error.message || 'Failed to update claim' },
@@ -318,7 +333,166 @@ if (error) {
       )
     }
 
+    // If claim is being cancelled or expired, check if we should reactivate the availability
+    if (validationResult.data.status === 'cancelled' || validationResult.data.status === 'expired') {
+      // Check if there are any other confirmed claims for this availability
+      const { data: otherConfirmedClaims } = await supabase
+        .from('claims')
+        .select('*')
+        .eq('availability_id', claim.availability_id)
+        .eq('status', 'confirmed')
+        .neq('id', id)
+
+      // If no other confirmed claims exist, reactivate the availability
+      if (!otherConfirmedClaims || otherConfirmedClaims.length === 0) {
+        const { error: reactivateError } = await supabase
+          .from('availabilities')
+          .update({ 
+            is_active: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', claim.availability_id)
+
+        if (reactivateError) {
+          console.error('Error reactivating availability:', reactivateError)
+          // Don't fail the request, but log the error
+        }
+      }
+    }
+
     return NextResponse.json({ claim: updatedClaim })
+  } catch {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const { user, error: authError } = await getAuthenticatedUser(request)
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { id, action } = body
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Claim ID is required' },
+        { status: 400 }
+      )
+    }
+
+    if (action !== 'release') {
+      return NextResponse.json(
+        { error: 'Invalid action. Use "release" to release a claimed spot.' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = getSupabaseAdmin()
+
+    // Check if claim exists and get related data
+    const { data: claim } = await supabase
+      .from('claims')
+      .select(`
+        *,
+        availabilities (
+          id,
+          end_time,
+          parking_spots (
+            owner_id
+          )
+        )
+      `)
+      .eq('id', id)
+      .single()
+
+    if (!claim) {
+      return NextResponse.json(
+        { error: 'Claim not found' },
+        { status: 404 }
+      )
+    }
+
+    // Only the claimer can release their own claim
+    if (claim.claimer_id !== user.id) {
+      return NextResponse.json(
+        { error: 'You can only release your own claims' },
+        { status: 403 }
+      )
+    }
+
+    // Check if the claim is confirmed
+    if (claim.status !== 'confirmed') {
+      return NextResponse.json(
+        { error: 'Only confirmed claims can be released' },
+        { status: 400 }
+      )
+    }
+
+    // Check if the availability window is still active
+    const now = new Date()
+    const endTime = new Date(claim.availabilities.end_time)
+    
+    if (endTime <= now) {
+      return NextResponse.json(
+        { error: 'Cannot release claim - availability window has expired' },
+        { status: 400 }
+      )
+    }
+
+    // Update the claim status to 'released'
+    const { error: updateError } = await supabase
+      .from('claims')
+      .update({ 
+        status: 'released',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+
+    if (updateError) {
+      console.error('Error updating claim status:', updateError)
+      return NextResponse.json(
+        { error: updateError.message || 'Failed to release claim' },
+        { status: updateError.code === '42501' ? 403 : 500 }
+      )
+    }
+
+    // Check if there are any other confirmed claims for this availability
+    const { data: otherConfirmedClaims } = await supabase
+      .from('claims')
+      .select('*')
+      .eq('availability_id', claim.availability_id)
+      .eq('status', 'confirmed')
+
+    // If no other confirmed claims exist, reactivate the availability
+    if (!otherConfirmedClaims || otherConfirmedClaims.length === 0) {
+      const { error: reactivateError } = await supabase
+        .from('availabilities')
+        .update({ 
+          is_active: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', claim.availability_id)
+
+      if (reactivateError) {
+        console.error('Error reactivating availability:', reactivateError)
+        // Don't fail the request, but log the error
+      }
+    }
+
+    return NextResponse.json({ 
+      message: 'Spot released successfully',
+      claim: { id, status: 'released' }
+    })
   } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -382,17 +556,43 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+        // Store the availability_id before deleting the claim
+    const availabilityId = claim.availability_id
+
     const { error } = await supabase
       .from('claims')
       .delete()
       .eq('id', id)
 
-if (error) {
+    if (error) {
       console.error('Error deleting claim:', error)
       return NextResponse.json(
         { error: error.message || 'Failed to delete claim' },
         { status: error.code === '42501' ? 403 : 500 }
       )
+    }
+
+    // Check if there are any other confirmed claims for this availability
+    const { data: otherConfirmedClaims } = await supabase
+      .from('claims')
+      .select('*')
+      .eq('availability_id', availabilityId)
+      .eq('status', 'confirmed')
+
+    // If no other confirmed claims exist, reactivate the availability
+    if (!otherConfirmedClaims || otherConfirmedClaims.length === 0) {
+      const { error: reactivateError } = await supabase
+        .from('availabilities')
+        .update({ 
+          is_active: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', availabilityId)
+
+      if (reactivateError) {
+        console.error('Error reactivating availability:', reactivateError)
+        // Don't fail the request, but log the error
+      }
     }
 
     return NextResponse.json({ message: 'Claim deleted successfully' })

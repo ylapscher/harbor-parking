@@ -1,0 +1,138 @@
+---
+title: 'Update Claim'
+api: 'PUT /claims'
+description: 'Update an existing claim (claimers can update their own claims, spot owners can update claims for their spots)'
+---
+
+Update an existing claim. Claimers can update their own claims, and spot owners can update claims for their parking spots.
+
+## Request
+
+<RequestExample>
+```bash
+curl -X PUT "https://parking.lapscher.com/api/claims" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "status": "confirmed",
+    "notes": "Updated notes"
+  }'
+```
+</RequestExample>
+
+### Request Body
+
+<ParamField body="id" type="string" format="uuid" required={true}>
+  ID of the claim to update
+</ParamField>
+
+<ParamField body="status" type="string" required={false}>
+  New status for the claim. Valid values: `pending`, `confirmed`, `released`, `expired`, `cancelled`
+</ParamField>
+
+<ParamField body="notes" type="string" required={false}>
+  Updated notes for the claim
+</ParamField>
+
+## Response
+
+<ResponseExample>
+```json
+{
+  "claim": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "availability_id": "456e7890-e89b-12d3-a456-426614174000",
+    "claimer_id": "789e0123-e89b-12d3-a456-426614174000",
+    "status": "confirmed",
+    "notes": "Updated notes",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T11:00:00Z"
+  }
+}
+```
+</ResponseExample>
+
+### Response Fields
+
+<ResponseField name="claim" type="object">
+  The updated claim object
+</ResponseField>
+
+<ResponseField name="claim.id" type="string" format="uuid">
+  Unique identifier for the claim
+</ResponseField>
+
+<ResponseField name="claim.availability_id" type="string" format="uuid">
+  ID of the availability being claimed
+</ResponseField>
+
+<ResponseField name="claim.claimer_id" type="string" format="uuid">
+  ID of the user who made the claim
+</ResponseField>
+
+<ResponseField name="claim.status" type="string">
+  Current status of the claim
+</ResponseField>
+
+<ResponseField name="claim.notes" type="string">
+  Notes for the claim
+</ResponseField>
+
+<ResponseField name="claim.created_at" type="string" format="date-time">
+  Timestamp when the claim was created
+</ResponseField>
+
+<ResponseField name="claim.updated_at" type="string" format="date-time">
+  Timestamp when the claim was last updated
+</ResponseField>
+
+## Error Responses
+
+<ResponseExample status="400">
+```json
+{
+  "error": "Invalid claim ID"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="401">
+```json
+{
+  "error": "Authentication required"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="403">
+```json
+{
+  "error": "You do not have permission to update this claim"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="404">
+```json
+{
+  "error": "Claim not found"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="409">
+```json
+{
+  "error": "Invalid status transition"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="500">
+```json
+{
+  "error": "Failed to update claim"
+}
+```
+</ResponseExample>

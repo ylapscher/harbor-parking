@@ -1,0 +1,130 @@
+---
+title: 'List Claims'
+api: 'GET /claims'
+description: 'Retrieve parking spot claims with optional filtering'
+---
+
+Retrieve a list of parking spot claims. You can filter the results by claimer ID, availability ID, or claim status.
+
+## Request
+
+<RequestExample>
+```bash
+curl -X GET "https://parking.lapscher.com/api/claims" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+</RequestExample>
+
+### Query Parameters
+
+<ParamField query="claimer_id" type="string" format="uuid" required={false}>
+  Filter claims by the ID of the user who made the claim
+</ParamField>
+
+<ParamField query="availability_id" type="string" format="uuid" required={false}>
+  Filter claims by the availability ID
+</ParamField>
+
+<ParamField query="status" type="string" required={false}>
+  Filter claims by status. Valid values: `pending`, `confirmed`, `released`, `expired`, `cancelled`
+</ParamField>
+
+## Response
+
+<ResponseExample>
+```json
+{
+  "claims": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "availability_id": "456e7890-e89b-12d3-a456-426614174000",
+      "claimer_id": "789e0123-e89b-12d3-a456-426614174000",
+      "status": "confirmed",
+      "notes": "Need spot for meeting",
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z",
+      "availabilities": {
+        "id": "456e7890-e89b-12d3-a456-426614174000",
+        "start_time": "2024-01-15T14:00:00Z",
+        "end_time": "2024-01-15T18:00:00Z",
+        "is_active": false,
+        "parking_spots": {
+          "id": "abc12345-e89b-12d3-a456-426614174000",
+          "spot_number": "A-12",
+          "location": "Near elevator",
+          "owner_id": "def67890-e89b-12d3-a456-426614174000",
+          "profiles": {
+            "full_name": "John Doe",
+            "email": "john.doe@example.com"
+          }
+        }
+      }
+    }
+  ]
+}
+```
+</ResponseExample>
+
+### Response Fields
+
+<ResponseField name="claims" type="array">
+  Array of claim objects
+</ResponseField>
+
+<ResponseField name="claims[].id" type="string" format="uuid">
+  Unique identifier for the claim
+</ResponseField>
+
+<ResponseField name="claims[].availability_id" type="string" format="uuid">
+  ID of the availability being claimed
+</ResponseField>
+
+<ResponseField name="claims[].claimer_id" type="string" format="uuid">
+  ID of the user who made the claim
+</ResponseField>
+
+<ResponseField name="claims[].status" type="string">
+  Current status of the claim. Possible values: `pending`, `confirmed`, `released`, `expired`, `cancelled`
+</ResponseField>
+
+<ResponseField name="claims[].notes" type="string">
+  Optional notes provided by the claimer
+</ResponseField>
+
+<ResponseField name="claims[].created_at" type="string" format="date-time">
+  Timestamp when the claim was created
+</ResponseField>
+
+<ResponseField name="claims[].updated_at" type="string" format="date-time">
+  Timestamp when the claim was last updated
+</ResponseField>
+
+<ResponseField name="claims[].availabilities" type="object">
+  Associated availability information
+</ResponseField>
+
+<ResponseField name="claims[].availabilities.parking_spots" type="object">
+  Associated parking spot information
+</ResponseField>
+
+<ResponseField name="claims[].availabilities.parking_spots.profiles" type="object">
+  Owner profile information
+</ResponseField>
+
+## Error Responses
+
+<ResponseExample status="401">
+```json
+{
+  "error": "Authentication required"
+}
+```
+</ResponseExample>
+
+<ResponseExample status="500">
+```json
+{
+  "error": "Failed to fetch claims"
+}
+```
+</ResponseExample>
