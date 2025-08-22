@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ParkingSpotWithOwner, AvailabilityWithSpot } from '@/types'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 interface ParkingSpotCardProps {
   spot?: ParkingSpotWithOwner
@@ -25,6 +26,34 @@ export function ParkingSpotCard({
   loading = false
 }: ParkingSpotCardProps) {
   const [claiming, setClaiming] = useState(false)
+  const [hasConfirmedClaim, setHasConfirmedClaim] = useState(false)
+  const [checkingClaims, setCheckingClaims] = useState(false)
+
+  const supabase = createSupabaseBrowserClient()
+
+  // Check if there are any confirmed claims for this availability
+  useEffect(() => {
+    if (!availability || isOwner) return
+
+    const checkConfirmedClaims = async () => {
+      setCheckingClaims(true)
+      try {
+        const { data: claims } = await supabase
+          .from('claims')
+          .select('id')
+          .eq('availability_id', availability.id)
+          .eq('status', 'confirmed')
+        
+        setHasConfirmedClaim(Boolean(claims && claims.length > 0))
+      } catch (error) {
+        console.error('Error checking claims:', error)
+      } finally {
+        setCheckingClaims(false)
+      }
+    }
+
+    checkConfirmedClaims()
+  }, [availability, isOwner, supabase])
 
   const handleClaim = async () => {
     if (!availability || !onClaim) return
@@ -109,16 +138,17 @@ export function ParkingSpotCard({
           )}
           {availability && (
             <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-              isAvailable 
+              hasConfirmedClaim
+                ? 'bg-red-100 text-red-800'
+                : isAvailable 
                 ? 'bg-green-100 text-green-800' 
                 : isExpired
                 ? 'bg-gray-100 text-gray-800'
                 : 'bg-red-100 text-red-800'
             }`}>
-              {isAvailable ? 'Available' : isExpired ? 'Expired' : 'Unavailable'}
+              {hasConfirmedClaim ? 'Claimed' : isAvailable ? 'Available' : isExpired ? 'Expired' : 'Unavailable'}
             </span>
           )}
-
         </div>
       </div>
 
@@ -182,16 +212,20 @@ export function ParkingSpotCard({
             </>
           ) : (
             <>
-              {availability && isAvailable && (
+              {availability && isAvailable && !hasConfirmedClaim && (
                 <button
                   onClick={handleClaim}
-                  disabled={claiming}
+                  disabled={claiming || hasConfirmedClaim || checkingClaims}
                   className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
-                  {claiming ? 'Claiming...' : 'Claim Spot'}
+                  {claiming ? 'Claiming...' : checkingClaims ? 'Checking...' : hasConfirmedClaim ? 'Claimed' : 'Claim Spot'}
                 </button>
               )}
-
+              {availability && isAvailable && hasConfirmedClaim && (
+                <div className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium text-center">
+                  Already Claimed
+                </div>
+              )}
             </>
           )}
         </div>

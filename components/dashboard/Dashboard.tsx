@@ -146,6 +146,11 @@ export function Dashboard() {
         .gt('end_time', new Date().toISOString())
         .eq('parking_spots.is_verified', true) // Only show verified spots
         .neq('parking_spots.owner_id', user.id)
+        .not('id', 'in', `(
+          SELECT availability_id 
+          FROM claims 
+          WHERE status = 'confirmed'
+        )`)
         .order('start_time', { ascending: true })
 
       setAvailableSpots(available || [])
@@ -199,10 +204,7 @@ export function Dashboard() {
     setShowAvailabilityModal(true)
   }
 
-  const handleClaimSpot = (availability: AvailabilityWithSpot) => {
-    setSelectedAvailability(availability)
-    setShowClaimModal(true)
-  }
+
 
   const handleReleaseClaim = async (claimId: string) => {
     try {
@@ -297,7 +299,7 @@ export function Dashboard() {
       //   })
       // })
 
-      const { data, error } =await supabase
+      const { error } = await supabase
         .from('parking_spots')
         .insert([
           {
@@ -509,7 +511,13 @@ export function Dashboard() {
                 <ParkingSpotCard
                   key={availability.id}
                   availability={availability}
-                  onClaim={() => handleClaimSpot(availability)}
+                  onClaim={() => {
+                    fetchData()
+                    setSuccess('Spot claimed successfully!')
+                    setTimeout(() => setSuccess(null), 3000)
+                    setShowClaimModal(false)
+                    setSelectedAvailability(null)
+                  }}
                 />
               ))}
             </div>
@@ -583,6 +591,8 @@ export function Dashboard() {
           availability={selectedAvailability}
           onClaim={() => {
             fetchData()
+            setSuccess('Spot claimed successfully!')
+            setTimeout(() => setSuccess(null), 3000)
             setShowClaimModal(false)
             setSelectedAvailability(null)
           }}

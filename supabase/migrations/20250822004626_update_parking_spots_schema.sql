@@ -18,6 +18,9 @@ WHERE is_verified IS NULL OR is_active IS NULL;
 -- Ensure is_verified has a default value
 ALTER TABLE public.parking_spots ALTER COLUMN is_verified SET DEFAULT FALSE;
 
+-- Drop existing constraint if it exists
+ALTER TABLE public.parking_spots DROP CONSTRAINT IF EXISTS check_verified_active;
+
 -- Add constraint to ensure is_active is only true when is_verified is true
 ALTER TABLE public.parking_spots ADD CONSTRAINT check_verified_active 
 CHECK (NOT (is_active = true AND is_verified = false));
@@ -33,6 +36,9 @@ CREATE POLICY "Users can view parking spots" ON public.parking_spots
       WHERE id = auth.uid() AND is_admin = true
     )
   );
+
+-- Drop existing admin policy if it exists
+DROP POLICY IF EXISTS "Admins can update verification status" ON public.parking_spots;
 
 -- Add policy for admins to update verification status
 CREATE POLICY "Admins can update verification status" ON public.parking_spots

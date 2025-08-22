@@ -180,7 +180,7 @@ Fetch claims.
 **Query Parameters:**
 - `claimer_id` (optional): Filter by claimer ID
 - `availability_id` (optional): Filter by availability ID
-- `status` (optional): Filter by status (pending, confirmed, expired, cancelled)
+- `status` (optional): Filter by status (pending, confirmed, released, expired, cancelled)
 
 **Response:**
 ```json
@@ -336,7 +336,7 @@ interface Claim {
   id: string
   availability_id: string
   claimer_id: string
-  status: 'pending' | 'confirmed' | 'expired' | 'cancelled'
+  status: 'pending' | 'confirmed' | 'released' | 'expired' | 'cancelled'
   notes?: string
   created_at: string
   updated_at: string

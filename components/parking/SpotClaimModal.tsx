@@ -68,6 +68,18 @@ export function SpotClaimModal({ availability, onClaim, onClose }: SpotClaimModa
         return
       }
 
+      // Final check: verify no confirmed claims exist for this availability
+      const { data: claims } = await supabase
+        .from('claims')
+        .select('id')
+        .eq('availability_id', availability.id)
+        .eq('status', 'confirmed')
+      
+      if (claims && claims.length > 0) {
+        setError('This spot has already been claimed by someone else. Please try another spot.')
+        return
+      }
+
       // Create claim
       const response = await fetch('/api/claims', {
         method: 'POST',
@@ -81,8 +93,18 @@ export function SpotClaimModal({ availability, onClaim, onClose }: SpotClaimModa
         })
       })
 
-if (!response.ok) {
+      if (!response.ok) {
         const errorData = await response.json()
+        
+        // Handle specific error cases
+        if (response.status === 409) {
+          if (errorData.error?.includes('already been claimed')) {
+            throw new Error('This spot has already been claimed by someone else. Please try another spot.')
+          } else if (errorData.error?.includes('already have a claim')) {
+            throw new Error('You already have a claim for this spot.')
+          }
+        }
+        
         throw new Error(errorData.error || 'Failed to claim spot')
       }
 

@@ -16,7 +16,7 @@ export type Claim = Database['public']['Tables']['claims']['Row']
 export type ClaimInsert = Database['public']['Tables']['claims']['Insert']
 export type ClaimUpdate = Database['public']['Tables']['claims']['Update']
 
-export type ClaimStatus = 'pending' | 'confirmed' | 'expired' | 'cancelled'
+export type ClaimStatus = 'pending' | 'confirmed' | 'expired' | 'cancelled' | 'released'
 
 // Extended types with relations
 export interface ParkingSpotWithOwner extends ParkingSpot {

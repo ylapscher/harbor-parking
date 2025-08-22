@@ -1,7 +1,7 @@
 // Generated TypeScript types from OpenAPI 3.0 specification
 // Harbor Parking API v1.0.0
 
-export type ClaimStatus = 'pending' | 'confirmed' | 'expired' | 'cancelled'
+export type ClaimStatus = 'pending' | 'confirmed' | 'expired' | 'cancelled' | 'released'
 
 export interface Profile {
   /** Unique profile identifier */
@@ -270,7 +270,7 @@ export interface ClaimWithDetails extends Claim {
 }
 
 // Validation schemas (for runtime validation)
-export const ClaimStatusValues = ['pending', 'confirmed', 'expired', 'cancelled'] as const
+export const ClaimStatusValues = ['pending', 'confirmed', 'expired', 'cancelled', 'released'] as const
 
 export const validateClaimStatus = (status: string): status is ClaimStatus => {
   return ClaimStatusValues.includes(status as ClaimStatus)
