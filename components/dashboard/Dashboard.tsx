@@ -204,23 +204,7 @@ export function Dashboard() {
     setShowAvailabilityModal(true)
   }
 
-  const handleClaimSpot = async (availability: AvailabilityWithSpot) => {
-    // Check if there's already a confirmed claim for this availability
-    const { data: claims } = await supabase
-      .from('claims')
-      .select('id')
-      .eq('availability_id', availability.id)
-      .eq('status', 'confirmed')
-    
-    if (claims && claims.length > 0) {
-      setError('This spot has already been claimed by someone else.')
-      setTimeout(() => setError(null), 5000)
-      return
-    }
-    
-    setSelectedAvailability(availability)
-    setShowClaimModal(true)
-  }
+
 
   const handleReleaseClaim = async (claimId: string) => {
     try {
@@ -315,7 +299,7 @@ export function Dashboard() {
       //   })
       // })
 
-      const { data, error } =await supabase
+      const { error } = await supabase
         .from('parking_spots')
         .insert([
           {

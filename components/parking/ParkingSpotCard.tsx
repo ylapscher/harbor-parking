@@ -44,7 +44,7 @@ export function ParkingSpotCard({
           .eq('availability_id', availability.id)
           .eq('status', 'confirmed')
         
-        setHasConfirmedClaim(claims && claims.length > 0)
+        setHasConfirmedClaim(Boolean(claims && claims.length > 0))
       } catch (error) {
         console.error('Error checking claims:', error)
       } finally {
