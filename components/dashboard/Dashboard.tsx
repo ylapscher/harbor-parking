@@ -144,6 +144,7 @@ export function Dashboard() {
         `)
         .eq('is_active', true)
         .gt('end_time', new Date().toISOString())
+        .eq('parking_spots.is_verified', true) // Only show verified spots
         .neq('parking_spots.owner_id', user.id)
         .order('start_time', { ascending: true })
 
@@ -377,7 +378,7 @@ export function Dashboard() {
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <h3 className="text-lg font-semibold text-white mb-2">My Claims</h3>
             <p className="text-3xl font-bold text-yellow-400">
-              {myClaims.filter(c => c.status === 'pending' || c.status === 'confirmed').length}
+              {myClaims.filter(c => c.status === 'confirmed').length}
             </p>
             <p className="text-sm text-gray-400">Active claims</p>
           </div>

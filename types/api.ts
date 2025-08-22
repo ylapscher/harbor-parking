@@ -99,8 +99,6 @@ export interface DashboardStats {
   activeClaims: number
   /** Total number of claims by user */
   totalClaims: number
-  /** Number of pending claims on user's spots */
-  pendingClaimsOnMySpots: number
   /** Number of confirmed claims on user's spots */
   confirmedClaimsOnMySpots: number
 }

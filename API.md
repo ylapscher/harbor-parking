@@ -31,7 +31,7 @@ Fetch comprehensive dashboard data for the authenticated user.
     "availableSpots": 5,
     "activeClaims": 1,
     "totalClaims": 3,
-    "pendingClaimsOnMySpots": 2,
+  
     "confirmedClaimsOnMySpots": 1
   },
   "mySpots": [...],
@@ -231,7 +231,6 @@ Update a claim.
 **Permissions:**
 - Claimers can update their own claims
 - Spot owners can update claims for their spots
-- Only spot owners can confirm claims
 
 #### DELETE /claims?id=uuid
 Delete a claim.

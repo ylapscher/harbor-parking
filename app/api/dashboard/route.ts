@@ -134,9 +134,8 @@ export async function GET(request: NextRequest) {
     const stats = {
       mySpots: mySpots?.length || 0,
       availableSpots: availableSpots?.length || 0,
-      activeClaims: myClaims?.filter(c => c.status === 'pending' || c.status === 'confirmed').length || 0,
+      activeClaims: myClaims?.filter(c => c.status === 'confirmed').length || 0,
       totalClaims: myClaims?.length || 0,
-      pendingClaimsOnMySpots: claimsOnMySpots?.filter(c => c.status === 'pending').length || 0,
       confirmedClaimsOnMySpots: claimsOnMySpots?.filter(c => c.status === 'confirmed').length || 0,
     }
 

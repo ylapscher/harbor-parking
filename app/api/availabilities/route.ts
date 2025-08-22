@@ -89,7 +89,20 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('availabilities')
-      .select('*')
+      .select(`
+        *,
+        parking_spots (
+          id,
+          spot_number,
+          location,
+          is_verified,
+          profiles (
+            id,
+            full_name,
+            apartment_number
+          )
+        )
+      `)
       .order('start_time', { ascending: true })
 
     if (spotId) {
@@ -104,6 +117,7 @@ export async function GET(request: NextRequest) {
       query = query
         .eq('is_active', true)
         .gt('end_time', new Date().toISOString())
+        .eq('parking_spots.is_verified', true) // Only show availabilities for verified spots
     }
 
     const { data: availabilities, error } = await query
