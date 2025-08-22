@@ -9,10 +9,6 @@ ALTER TABLE public.claims DROP CONSTRAINT IF EXISTS claims_status_check;
 ALTER TABLE public.claims ADD CONSTRAINT claims_status_check 
   CHECK (status IN ('pending', 'confirmed', 'expired', 'cancelled', 'released'));
 
-<<<<<<< Current (Your changes)
--- Update the default value to ensure consistency
-ALTER TABLE public.claims ALTER COLUMN status SET DEFAULT 'pending';
-=======
 -- Ensure the default value is correct
 ALTER TABLE public.claims ALTER COLUMN status SET DEFAULT 'pending';
 
@@ -61,4 +57,6 @@ SELECT
 FROM public.claims 
 ORDER BY updated_at DESC 
 LIMIT 10;
->>>>>>> Incoming (Background Agent changes)
+
+
+
