@@ -146,14 +146,21 @@ export function Dashboard() {
         .gt('end_time', new Date().toISOString())
         .eq('parking_spots.is_verified', true) // Only show verified spots
         .neq('parking_spots.owner_id', user.id)
-        .not('id', 'in', `(
-          SELECT availability_id 
-          FROM claims 
-          WHERE status = 'confirmed'
-        )`)
         .order('start_time', { ascending: true })
 
-      setAvailableSpots(available || [])
+      // Get all confirmed claims to filter out claimed availabilities
+      const { data: confirmedClaims } = await supabase
+        .from('claims')
+        .select('availability_id')
+        .eq('status', 'confirmed')
+
+      // Filter out availabilities that have confirmed claims
+      const claimedAvailabilityIds = new Set(confirmedClaims?.map(claim => claim.availability_id) || [])
+      const availableSpots = available?.filter(availability => 
+        !claimedAvailabilityIds.has(availability.id)
+      ) || []
+
+      setAvailableSpots(availableSpots)
 
       // Fetch user's claims with related availability and spot owner details
       const { data: claims } = await supabase
