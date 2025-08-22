@@ -141,7 +141,6 @@ export function AvailabilityToggle({
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             id: currentAvailability.id,
@@ -162,7 +161,6 @@ if (!response.ok) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             spot_id: spotId,
