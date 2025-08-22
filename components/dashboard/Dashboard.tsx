@@ -18,6 +18,7 @@ export function Dashboard() {
   const [showClaimModal, setShowClaimModal] = useState(false)
   const [showAddSpotForm, setShowAddSpotForm] = useState(false)
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null)
+  const [selectedSpotVerified, setSelectedSpotVerified] = useState<boolean>(true)
   const [selectedAvailability, setSelectedAvailability] = useState<AvailabilityWithSpot | null>(null)
   const [newSpotData, setNewSpotData] = useState({
     spotNumber: '',
@@ -190,7 +191,10 @@ export function Dashboard() {
   }, [user, fetchData])
 
   const handleToggleAvailability = (spotId: string) => {
+    // Find the spot to get its verification status
+    const spot = mySpots.find(s => s.id === spotId)
     setSelectedSpot(spotId)
+    setSelectedSpotVerified(spot?.is_verified ?? false)
     setShowAvailabilityModal(true)
   }
 
@@ -508,6 +512,7 @@ export function Dashboard() {
       {showAvailabilityModal && selectedSpot && (
         <AvailabilityToggle
           spotId={selectedSpot}
+          spotVerified={selectedSpotVerified}
           onUpdate={() => {
             fetchData()
             setShowAvailabilityModal(false)

@@ -12,6 +12,7 @@ interface AvailabilityToggleProps {
     notes?: string
     is_active: boolean
   }
+  spotVerified?: boolean
   onUpdate?: () => void
   onClose?: () => void
 }
@@ -19,6 +20,7 @@ interface AvailabilityToggleProps {
 export function AvailabilityToggle({ 
   spotId, 
   currentAvailability, 
+  spotVerified = true,
   onUpdate,
   onClose 
 }: AvailabilityToggleProps) {
@@ -190,6 +192,12 @@ if (!response.ok) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!spotVerified && (
+            <div className="bg-yellow-900 border border-yellow-700 text-yellow-200 px-4 py-3 rounded">
+              This parking spot is pending admin approval. You cannot create availabilities until it is verified.
+            </div>
+          )}
+          
           {error && (
             <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded">
               {error}
@@ -261,7 +269,7 @@ if (!response.ok) {
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !spotVerified}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md font-medium transition-colors"
             >
               {loading ? 'Saving...' : (currentAvailability ? 'Update' : 'Set Available')}

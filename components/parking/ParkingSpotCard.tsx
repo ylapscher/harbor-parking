@@ -148,7 +148,13 @@ export function ParkingSpotCard({
             <>
               <button
                 onClick={() => onToggleAvailability?.(spotData.id)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                disabled={!spotData.is_verified}
+                title={!spotData.is_verified ? 'Spot pending admin approval' : ''}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  spotData.is_verified 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                    : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                }`}
               >
                 {availability?.is_active ? 'Update Availability' : 'Set Available'}
               </button>
