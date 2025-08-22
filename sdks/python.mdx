@@ -1,0 +1,344 @@
+# Python SDK
+
+Official Python SDK for the Harbor Parking API.
+
+## Installation
+
+```bash
+pip install harbor-parking
+```
+
+## Quick Start
+
+```python
+from harbor_parking import HarborParkingClient
+
+# Initialize the client
+client = HarborParkingClient(
+    base_url="https://parking.lapscher.com/api",
+    access_token="your_jwt_token"
+)
+
+# Get user profile
+profile = client.profile.get()
+
+# List available parking spots
+spots = client.availabilities.list(available=True)
+
+# Claim a parking spot
+claim = client.claims.create(
+    availability_id="availability_id",
+    notes="Need spot for meeting"
+)
+```
+
+## Authentication
+
+### Using JWT Token
+
+```python
+from harbor_parking import HarborParkingClient
+
+client = HarborParkingClient(
+    access_token="your_jwt_token"
+)
+```
+
+### Login and Get Token
+
+```python
+from harbor_parking import HarborParkingClient
+
+client = HarborParkingClient()
+
+# Login to get access token
+auth_response = client.auth.login(
+    email="user@example.com",
+    password="password123"
+)
+
+# Use the token for subsequent requests
+client.access_token = auth_response.access_token
+```
+
+## API Methods
+
+### Authentication
+
+```python
+# Login
+auth = client.auth.login(email="user@example.com", password="password123")
+
+# Logout
+client.auth.logout()
+
+# Refresh token
+client.auth.refresh(refresh_token="refresh_token")
+```
+
+### Profile
+
+```python
+# Get user profile
+profile = client.profile.get()
+
+# Update profile
+updated_profile = client.profile.update(
+    full_name="John Smith",
+    phone_number="+1234567890"
+)
+```
+
+### Dashboard
+
+```python
+# Get dashboard data
+dashboard = client.dashboard.get()
+```
+
+### Parking Spots
+
+```python
+# List parking spots
+spots = client.parking_spots.list()
+
+# Create parking spot
+new_spot = client.parking_spots.create(
+    spot_number="A-15",
+    location="Level 2 Parking Garage",
+    notes="Near elevator"
+)
+
+# Update parking spot
+updated_spot = client.parking_spots.update(
+    id="spot_id",
+    location="Level 1 Parking Garage"
+)
+
+# Delete parking spot
+client.parking_spots.delete(id="spot_id")
+```
+
+### Availabilities
+
+```python
+# List availabilities
+availabilities = client.availabilities.list(available=True)
+
+# Create availability
+availability = client.availabilities.create(
+    spot_id="spot_id",
+    start_time="2024-01-20T09:00:00Z",
+    end_time="2024-01-20T18:00:00Z",
+    notes="Available while at work"
+)
+
+# Update availability
+updated_availability = client.availabilities.update(
+    id="availability_id",
+    end_time="2024-01-20T19:00:00Z"
+)
+
+# Delete availability
+client.availabilities.delete(id="availability_id")
+```
+
+### Claims
+
+```python
+# List claims
+claims = client.claims.list()
+
+# Create claim
+claim = client.claims.create(
+    availability_id="availability_id",
+    notes="Need spot for meeting"
+)
+
+# Update claim
+updated_claim = client.claims.update(
+    id="claim_id",
+    status="cancelled"
+)
+
+# Delete claim
+client.claims.delete(id="claim_id")
+
+# Release claim
+client.claims.release(id="claim_id")
+```
+
+## Error Handling
+
+```python
+from harbor_parking import HarborParkingError
+
+try:
+    profile = client.profile.get()
+except HarborParkingError as e:
+    print(f"Error: {e.message}")
+    print(f"Status Code: {e.status_code}")
+    print(f"Details: {e.details}")
+```
+
+## Configuration
+
+### Environment Variables
+
+```python
+import os
+from harbor_parking import HarborParkingClient
+
+client = HarborParkingClient(
+    base_url=os.getenv("HARBOR_API_URL"),
+    access_token=os.getenv("HARBOR_ACCESS_TOKEN")
+)
+```
+
+### Custom Headers
+
+```python
+client = HarborParkingClient(
+    access_token="your_token",
+    headers={
+        "User-Agent": "MyApp/1.0",
+        "X-Custom-Header": "value"
+    }
+)
+```
+
+## Response Objects
+
+All API methods return structured response objects:
+
+```python
+# Profile response
+profile = client.profile.get()
+print(profile.id)  # User ID
+print(profile.full_name)  # Full name
+print(profile.is_approved)  # Approval status
+
+# Availability response
+availability = client.availabilities.create(...)
+print(availability.id)  # Availability ID
+print(availability.start_time)  # Start time
+print(availability.parking_spots.spot_number)  # Spot number
+```
+
+## Pagination
+
+For endpoints that support pagination:
+
+```python
+# Get first page
+availabilities = client.availabilities.list(limit=10, offset=0)
+
+# Get next page
+next_page = client.availabilities.list(limit=10, offset=10)
+```
+
+## Rate Limiting
+
+The SDK automatically handles rate limiting:
+
+```python
+# The SDK will automatically retry requests when rate limited
+try:
+    spots = client.parking_spots.list()
+except HarborParkingError as e:
+    if e.status_code == 429:
+        print("Rate limited, retrying...")
+```
+
+## Webhooks
+
+Handle webhook events:
+
+```python
+from harbor_parking import WebhookHandler
+
+handler = WebhookHandler(secret="your_webhook_secret")
+
+@app.route('/webhooks', methods=['POST'])
+def handle_webhook():
+    event = handler.verify_and_parse(request.data, request.headers)
+    
+    if event.type == 'claim.created':
+        # Handle claim created event
+        claim = event.data.claim
+        print(f"New claim: {claim.id}")
+    
+    return 'OK'
+```
+
+## Examples
+
+### Complete Workflow
+
+```python
+from harbor_parking import HarborParkingClient
+
+# Initialize client
+client = HarborParkingClient(access_token="your_token")
+
+# Get user profile
+profile = client.profile.get()
+print(f"Welcome, {profile.full_name}!")
+
+# List available spots
+available_spots = client.availabilities.list(available=True)
+print(f"Found {len(available_spots)} available spots")
+
+# Claim a spot
+if available_spots:
+    claim = client.claims.create(
+        availability_id=available_spots[0].id,
+        notes="Need spot for meeting"
+    )
+    print(f"Claimed spot: {claim.id}")
+
+# List my claims
+my_claims = client.claims.list()
+print(f"You have {len(my_claims)} active claims")
+```
+
+### Error Handling Example
+
+```python
+from harbor_parking import HarborParkingError
+
+def safe_api_call(func, *args, **kwargs):
+    try:
+        return func(*args, **kwargs)
+    except HarborParkingError as e:
+        if e.status_code == 401:
+            print("Authentication failed. Please check your token.")
+        elif e.status_code == 403:
+            print("Access denied. Your account may not be approved.")
+        elif e.status_code == 404:
+            print("Resource not found.")
+        elif e.status_code == 429:
+            print("Rate limited. Please wait before making more requests.")
+        else:
+            print(f"API Error: {e.message}")
+        return None
+
+# Use the safe wrapper
+profile = safe_api_call(client.profile.get)
+```
+
+## Best Practices
+
+1. **Token Management**: Store tokens securely and refresh them when needed
+2. **Error Handling**: Always handle API errors gracefully
+3. **Rate Limiting**: Respect rate limits and implement retry logic
+4. **Environment Variables**: Use environment variables for sensitive data
+5. **Logging**: Log API calls for debugging and monitoring
+
+## Support
+
+For support and questions:
+
+- [GitHub Issues](https://github.com/ylapscher/harbor-parking/issues)
+- [Documentation](https://lapscher.mintlify.app/api-reference/introduction)
+- [Community Discussions](https://github.com/ylapscher/harbor-parking/discussions)

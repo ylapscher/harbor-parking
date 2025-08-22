@@ -11,7 +11,7 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://harbor-parking.vercel.app/api
+  - url: https://parking.lapscher.com/api
     description: Production server
   - url: http://localhost:3000/api
     description: Development server

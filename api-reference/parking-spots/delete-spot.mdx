@@ -1,0 +1,114 @@
+# Delete Parking Spot
+
+Remove a parking spot owned by the authenticated user.
+
+## Endpoint
+
+```
+DELETE /parking-spots
+```
+
+## Authentication
+
+This endpoint requires authentication. Include your JWT token in the Authorization header:
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | ID of the parking spot to delete |
+
+## Response
+
+### Success Response (200 OK)
+
+```json
+{
+  "message": "Parking spot deleted successfully"
+}
+```
+
+### Error Responses
+
+#### 401 Unauthorized
+
+```json
+{
+  "error": "Authentication required"
+}
+```
+
+#### 403 Forbidden
+
+```json
+{
+  "error": "You can only delete your own parking spots"
+}
+```
+
+#### 404 Not Found
+
+```json
+{
+  "error": "Parking spot not found"
+}
+```
+
+#### 409 Conflict
+
+```json
+{
+  "error": "Cannot delete spot with active availabilities"
+}
+```
+
+## Example
+
+### cURL
+
+```bash
+curl -X DELETE "https://parking.lapscher.com/api/parking-spots?id=123e4567-e89b-12d3-a456-426614174000" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### JavaScript
+
+```javascript
+const response = await fetch('https://parking.lapscher.com/api/parking-spots?id=123e4567-e89b-12d3-a456-426614174000', {
+  method: 'DELETE',
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+
+const data = await response.json();
+```
+
+### Python
+
+```python
+import requests
+
+response = requests.delete(
+    'https://parking.lapscher.com/api/parking-spots',
+    headers={
+        'Authorization': f'Bearer {token}'
+    },
+    params={
+        'id': '123e4567-e89b-12d3-a456-426614174000'
+    }
+)
+
+data = response.json()
+```
+
+## Notes
+
+- Only the spot owner can delete their parking spots
+- Spots with active availabilities cannot be deleted
+- All associated availabilities and claims will be automatically removed
+- This action is irreversible

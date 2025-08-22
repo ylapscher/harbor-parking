@@ -1,0 +1,63 @@
+# Availability
+
+Availability windows define when a parking spot can be claimed by other residents. Each availability represents a time period during which the spot owner has made their parking spot available for sharing.
+
+## Structure
+
+An availability contains the following information:
+
+- **Spot ID**: Reference to the parking spot being made available
+- **Start Time**: When the availability window begins
+- **End Time**: When the availability window ends
+- **Notes**: Optional notes from the spot owner
+- **Active Status**: Whether the availability is currently active
+- **Owner**: The resident who created the availability
+
+## Time Windows
+
+- **Future-Only**: Availability windows must start in the future
+- **Duration**: Windows can range from hours to days
+- **Flexibility**: Owners can create multiple overlapping windows
+- **Immediate**: Spots can be made immediately available
+
+## Status Management
+
+- **Active**: The spot is available for claiming
+- **Inactive**: The spot is not available (claimed or manually deactivated)
+- **Expired**: The time window has passed
+
+## Claiming Process
+
+1. **Owner Creates Availability**: Spot owner sets a time window when their spot is available
+2. **Residents Browse**: Other residents can see available spots
+3. **First-Come-First-Served**: First person to claim gets the spot
+4. **Automatic Deactivation**: Once claimed, the availability becomes inactive
+
+## Example
+
+```json
+{
+  "id": "789e0123-e89b-12d3-a456-426614174002",
+  "spot_id": "123e4567-e89b-12d3-a456-426614174000",
+  "start_time": "2024-01-20T09:00:00Z",
+  "end_time": "2024-01-20T18:00:00Z",
+  "notes": "Available while I'm at work",
+  "is_active": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z"
+}
+```
+
+## API Endpoints
+
+- `GET /availabilities` - List all availabilities
+- `POST /availabilities` - Create a new availability window
+- `PUT /availabilities` - Update availability details
+- `DELETE /availabilities` - Remove an availability window
+
+## Best Practices
+
+- **Clear Time Windows**: Set specific start and end times
+- **Descriptive Notes**: Include relevant information for potential claimers
+- **Regular Updates**: Keep availability windows current
+- **Communication**: Coordinate with building management for long-term availability

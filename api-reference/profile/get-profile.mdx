@@ -1,6 +1,6 @@
 ---
 title: "Get User Profile"
-api: "GET https://harbor-parking.vercel.app/api/profile"
+api: "GET https://parking.lapscher.com/api/profile"
 description: "Retrieve the authenticated user's profile information and basic user data"
 ---
 
@@ -75,13 +75,13 @@ This endpoint retrieves comprehensive profile and authentication data for the cu
 <CodeGroup>
 
 ```bash cURL
-curl -X GET "https://harbor-parking.vercel.app/api/profile" \
+curl -X GET "https://parking.lapscher.com/api/profile" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://harbor-parking.vercel.app/api/profile', {
+const response = await fetch('https://parking.lapscher.com/api/profile', {
   method: 'GET',
   headers: {
     'Authorization': `Bearer ${yourJwtToken}`,
@@ -96,7 +96,7 @@ console.log(profileData);
 ```python Python
 import requests
 
-url = "https://harbor-parking.vercel.app/api/profile"
+url = "https://parking.lapscher.com/api/profile"
 headers = {
     "Authorization": f"Bearer {your_jwt_token}",
     "Content-Type": "application/json"
@@ -109,7 +109,7 @@ print(profile_data)
 
 ```php PHP
 <?php
-$url = 'https://harbor-parking.vercel.app/api/profile';
+$url = 'https://parking.lapscher.com/api/profile';
 $headers = [
     'Authorization: Bearer ' . $your_jwt_token,
     'Content-Type: application/json'

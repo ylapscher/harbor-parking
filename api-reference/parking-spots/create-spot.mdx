@@ -1,0 +1,174 @@
+# Create Parking Spot
+
+Register a new parking spot owned by the authenticated user.
+
+## Endpoint
+
+```
+POST /parking-spots
+```
+
+## Authentication
+
+This endpoint requires authentication. Include your JWT token in the Authorization header:
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Request Body
+
+```json
+{
+  "spot_number": "A-15",
+  "location": "Level 2 Parking Garage",
+  "notes": "Near elevator"
+}
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `spot_number` | string | Yes | Unique spot number or identifier |
+| `location` | string | Yes | Description of the spot location |
+| `notes` | string | No | Optional notes about the spot |
+
+## Response
+
+### Success Response (201 Created)
+
+```json
+{
+  "parking_spot": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "spot_number": "A-15",
+    "location": "Level 2 Parking Garage",
+    "notes": "Near elevator",
+    "owner_id": "456e7890-e89b-12d3-a456-426614174001",
+    "is_verified": false,
+    "is_active": true,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+### Error Responses
+
+#### 400 Bad Request
+
+```json
+{
+  "error": "Validation failed",
+  "details": {
+    "spot_number": {
+      "_errors": ["Spot number is required"]
+    },
+    "location": {
+      "_errors": ["Location is required"]
+    }
+  }
+}
+```
+
+#### 401 Unauthorized
+
+```json
+{
+  "error": "Authentication required"
+}
+```
+
+#### 403 Forbidden
+
+```json
+{
+  "error": "Account not approved"
+}
+```
+
+#### 409 Conflict
+
+```json
+{
+  "error": "Spot number already exists"
+}
+```
+
+## Example
+
+### cURL
+
+```bash
+curl -X POST "https://parking.lapscher.com/api/parking-spots" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "spot_number": "A-15",
+    "location": "Level 2 Parking Garage",
+    "notes": "Near elevator"
+  }'
+```
+
+### JavaScript
+
+```javascript
+const response = await fetch('https://parking.lapscher.com/api/parking-spots', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    spot_number: 'A-15',
+    location: 'Level 2 Parking Garage',
+    notes: 'Near elevator'
+  })
+});
+
+const data = await response.json();
+```
+
+### Python
+
+```python
+import requests
+
+response = requests.post(
+    'https://parking.lapscher.com/api/parking-spots',
+    headers={
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'spot_number': 'A-15',
+        'location': 'Level 2 Parking Garage',
+        'notes': 'Near elevator'
+    }
+)
+
+data = response.json()
+```
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique spot identifier |
+| `spot_number` | string | Spot number or identifier |
+| `location` | string | Location description |
+| `notes` | string | Optional notes about the spot |
+| `owner_id` | string | ID of the spot owner |
+| `is_verified` | boolean | Whether the spot is verified by admin (initially false) |
+| `is_active` | boolean | Whether the spot is active (initially true) |
+| `created_at` | string | Creation timestamp |
+| `updated_at` | string | Last update timestamp |
+
+## Notes
+
+- Only approved users can create parking spots
+- Spot numbers must be unique within the system
+- New spots are created with `is_verified: false` and require admin approval
+- The `owner_id` is automatically set to the authenticated user's ID
+- All timestamps are in ISO 8601 format

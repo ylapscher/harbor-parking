@@ -1,0 +1,459 @@
+# TypeScript SDK
+
+Official TypeScript SDK for the Harbor Parking API.
+
+## Installation
+
+```bash
+npm install @harbor-parking/sdk
+```
+
+## Quick Start
+
+```typescript
+import { HarborParkingClient } from '@harbor-parking/sdk';
+
+// Initialize the client
+const client = new HarborParkingClient({
+  baseUrl: 'https://parking.lapscher.com/api',
+  accessToken: 'your_jwt_token'
+});
+
+// Get user profile
+const profile = await client.profile.get();
+
+// List available parking spots
+const spots = await client.availabilities.list({ available: true });
+
+// Claim a parking spot
+const claim = await client.claims.create({
+  availabilityId: 'availability_id',
+  notes: 'Need spot for meeting'
+});
+```
+
+## Authentication
+
+### Using JWT Token
+
+```typescript
+import { HarborParkingClient } from '@harbor-parking/sdk';
+
+const client = new HarborParkingClient({
+  accessToken: 'your_jwt_token'
+});
+```
+
+### Login and Get Token
+
+```typescript
+import { HarborParkingClient } from '@harbor-parking/sdk';
+
+const client = new HarborParkingClient();
+
+// Login to get access token
+const authResponse = await client.auth.login({
+  email: 'user@example.com',
+  password: 'password123'
+});
+
+// Use the token for subsequent requests
+client.setAccessToken(authResponse.accessToken);
+```
+
+## API Methods
+
+### Authentication
+
+```typescript
+// Login
+const auth = await client.auth.login({
+  email: 'user@example.com',
+  password: 'password123'
+});
+
+// Logout
+await client.auth.logout();
+
+// Refresh token
+const newTokens = await client.auth.refresh({
+  refreshToken: 'refresh_token'
+});
+```
+
+### Profile
+
+```typescript
+// Get user profile
+const profile = await client.profile.get();
+
+// Update profile
+const updatedProfile = await client.profile.update({
+  fullName: 'John Smith',
+  phoneNumber: '+1234567890'
+});
+```
+
+### Dashboard
+
+```typescript
+// Get dashboard data
+const dashboard = await client.dashboard.get();
+```
+
+### Parking Spots
+
+```typescript
+// List parking spots
+const spots = await client.parkingSpots.list();
+
+// Create parking spot
+const newSpot = await client.parkingSpots.create({
+  spotNumber: 'A-15',
+  location: 'Level 2 Parking Garage',
+  notes: 'Near elevator'
+});
+
+// Update parking spot
+const updatedSpot = await client.parkingSpots.update({
+  id: 'spot_id',
+  location: 'Level 1 Parking Garage'
+});
+
+// Delete parking spot
+await client.parkingSpots.delete({ id: 'spot_id' });
+```
+
+### Availabilities
+
+```typescript
+// List availabilities
+const availabilities = await client.availabilities.list({ available: true });
+
+// Create availability
+const availability = await client.availabilities.create({
+  spotId: 'spot_id',
+  startTime: '2024-01-20T09:00:00Z',
+  endTime: '2024-01-20T18:00:00Z',
+  notes: 'Available while at work'
+});
+
+// Update availability
+const updatedAvailability = await client.availabilities.update({
+  id: 'availability_id',
+  endTime: '2024-01-20T19:00:00Z'
+});
+
+// Delete availability
+await client.availabilities.delete({ id: 'availability_id' });
+```
+
+### Claims
+
+```typescript
+// List claims
+const claims = await client.claims.list();
+
+// Create claim
+const claim = await client.claims.create({
+  availabilityId: 'availability_id',
+  notes: 'Need spot for meeting'
+});
+
+// Update claim
+const updatedClaim = await client.claims.update({
+  id: 'claim_id',
+  status: 'cancelled'
+});
+
+// Delete claim
+await client.claims.delete({ id: 'claim_id' });
+
+// Release claim
+await client.claims.release({ id: 'claim_id' });
+```
+
+## Types
+
+The SDK includes comprehensive TypeScript types:
+
+```typescript
+import type {
+  User,
+  Profile,
+  ParkingSpot,
+  Availability,
+  Claim,
+  DashboardData,
+  AuthResponse
+} from '@harbor-parking/sdk';
+
+// Use types in your code
+const profile: Profile = await client.profile.get();
+const spots: ParkingSpot[] = await client.parkingSpots.list();
+const claims: Claim[] = await client.claims.list();
+```
+
+## Error Handling
+
+```typescript
+import { HarborParkingError } from '@harbor-parking/sdk';
+
+try {
+  const profile = await client.profile.get();
+} catch (error) {
+  if (error instanceof HarborParkingError) {
+    console.error(`Error: ${error.message}`);
+    console.error(`Status Code: ${error.statusCode}`);
+    console.error(`Details: ${error.details}`);
+  }
+}
+```
+
+## Configuration
+
+### Environment Variables
+
+```typescript
+import { HarborParkingClient } from '@harbor-parking/sdk';
+
+const client = new HarborParkingClient({
+  baseUrl: process.env.HARBOR_API_URL,
+  accessToken: process.env.HARBOR_ACCESS_TOKEN
+});
+```
+
+### Custom Headers
+
+```typescript
+const client = new HarborParkingClient({
+  accessToken: 'your_token',
+  headers: {
+    'User-Agent': 'MyApp/1.0',
+    'X-Custom-Header': 'value'
+  }
+});
+```
+
+### Request/Response Interceptors
+
+```typescript
+const client = new HarborParkingClient({
+  accessToken: 'your_token',
+  requestInterceptor: (config) => {
+    // Modify request config
+    console.log('Making request to:', config.url);
+    return config;
+  },
+  responseInterceptor: (response) => {
+    // Handle response
+    console.log('Received response:', response.status);
+    return response;
+  }
+});
+```
+
+## Response Objects
+
+All API methods return structured response objects:
+
+```typescript
+// Profile response
+const profile = await client.profile.get();
+console.log(profile.id); // User ID
+console.log(profile.fullName); // Full name
+console.log(profile.isApproved); // Approval status
+
+// Availability response
+const availability = await client.availabilities.create({...});
+console.log(availability.id); // Availability ID
+console.log(availability.startTime); // Start time
+console.log(availability.parkingSpots.spotNumber); // Spot number
+```
+
+## Pagination
+
+For endpoints that support pagination:
+
+```typescript
+// Get first page
+const availabilities = await client.availabilities.list({
+  limit: 10,
+  offset: 0
+});
+
+// Get next page
+const nextPage = await client.availabilities.list({
+  limit: 10,
+  offset: 10
+});
+```
+
+## Rate Limiting
+
+The SDK automatically handles rate limiting:
+
+```typescript
+// The SDK will automatically retry requests when rate limited
+try {
+  const spots = await client.parkingSpots.list();
+} catch (error) {
+  if (error instanceof HarborParkingError && error.statusCode === 429) {
+    console.log('Rate limited, retrying...');
+  }
+}
+```
+
+## Webhooks
+
+Handle webhook events:
+
+```typescript
+import { WebhookHandler } from '@harbor-parking/sdk';
+
+const handler = new WebhookHandler({ secret: 'your_webhook_secret' });
+
+app.post('/webhooks', (req, res) => {
+  const event = handler.verifyAndParse(req.body, req.headers);
+  
+  if (event.type === 'claim.created') {
+    // Handle claim created event
+    const claim = event.data.claim;
+    console.log(`New claim: ${claim.id}`);
+  }
+  
+  res.status(200).send('OK');
+});
+```
+
+## React Integration
+
+```typescript
+import React, { useState, useEffect } from 'react';
+import { HarborParkingClient } from '@harbor-parking/sdk';
+
+const client = new HarborParkingClient({
+  accessToken: localStorage.getItem('access_token')
+});
+
+function Dashboard() {
+  const [profile, setProfile] = useState(null);
+  const [spots, setSpots] = useState([]);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [profileData, spotsData] = await Promise.all([
+          client.profile.get(),
+          client.parkingSpots.list()
+        ]);
+        
+        setProfile(profileData);
+        setSpots(spotsData);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  return (
+    <div>
+      <h1>Welcome, {profile?.fullName}!</h1>
+      <p>You have {spots.length} parking spots</p>
+    </div>
+  );
+}
+```
+
+## Examples
+
+### Complete Workflow
+
+```typescript
+import { HarborParkingClient } from '@harbor-parking/sdk';
+
+async function main() {
+  // Initialize client
+  const client = new HarborParkingClient({
+    accessToken: 'your_token'
+  });
+
+  // Get user profile
+  const profile = await client.profile.get();
+  console.log(`Welcome, ${profile.fullName}!`);
+
+  // List available spots
+  const availableSpots = await client.availabilities.list({ available: true });
+  console.log(`Found ${availableSpots.length} available spots`);
+
+  // Claim a spot
+  if (availableSpots.length > 0) {
+    const claim = await client.claims.create({
+      availabilityId: availableSpots[0].id,
+      notes: 'Need spot for meeting'
+    });
+    console.log(`Claimed spot: ${claim.id}`);
+  }
+
+  // List my claims
+  const myClaims = await client.claims.list();
+  console.log(`You have ${myClaims.length} active claims`);
+}
+
+main().catch(console.error);
+```
+
+### Error Handling Example
+
+```typescript
+import { HarborParkingError } from '@harbor-parking/sdk';
+
+async function safeApiCall<T>(
+  apiCall: () => Promise<T>
+): Promise<T | null> {
+  try {
+    return await apiCall();
+  } catch (error) {
+    if (error instanceof HarborParkingError) {
+      switch (error.statusCode) {
+        case 401:
+          console.log('Authentication failed. Please check your token.');
+          break;
+        case 403:
+          console.log('Access denied. Your account may not be approved.');
+          break;
+        case 404:
+          console.log('Resource not found.');
+          break;
+        case 429:
+          console.log('Rate limited. Please wait before making more requests.');
+          break;
+        default:
+          console.log(`API Error: ${error.message}`);
+      }
+    }
+    return null;
+  }
+}
+
+// Use the safe wrapper
+const profile = await safeApiCall(() => client.profile.get());
+```
+
+## Best Practices
+
+1. **Token Management**: Store tokens securely and refresh them when needed
+2. **Error Handling**: Always handle API errors gracefully
+3. **Type Safety**: Use TypeScript types for better development experience
+4. **Environment Variables**: Use environment variables for sensitive data
+5. **Logging**: Log API calls for debugging and monitoring
+
+## Support
+
+For support and questions:
+
+- [GitHub Issues](https://github.com/ylapscher/harbor-parking/issues)
+- [Documentation](https://lapscher.mintlify.app/api-reference/introduction)
+- [Community Discussions](https://github.com/ylapscher/harbor-parking/discussions)

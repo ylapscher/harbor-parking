@@ -1,0 +1,228 @@
+# Webhooks
+
+Webhooks allow you to receive real-time notifications when events occur in the Harbor Parking system. This enables you to build integrations that respond to parking events automatically.
+
+## Overview
+
+Webhooks send HTTP POST requests to your specified URL when certain events occur. You can use webhooks to:
+
+- Send notifications to users
+- Update external systems
+- Trigger automated workflows
+- Log events for analytics
+
+## Supported Events
+
+### Spot Events
+
+- `spot.created` - A new parking spot is registered
+- `spot.updated` - Spot details are modified
+- `spot.verified` - Spot is approved by admin
+- `spot.deleted` - Spot is removed
+
+### Availability Events
+
+- `availability.created` - New availability window created
+- `availability.updated` - Availability details modified
+- `availability.deleted` - Availability window removed
+- `availability.activated` - Availability becomes active
+- `availability.deactivated` - Availability becomes inactive
+
+### Claim Events
+
+- `claim.created` - New claim submitted
+- `claim.confirmed` - Claim is confirmed
+- `claim.cancelled` - Claim is cancelled
+- `claim.expired` - Claim expires
+- `claim.released` - Claim is released
+
+### User Events
+
+- `user.registered` - New user account created
+- `user.approved` - User account approved
+- `user.rejected` - User account rejected
+
+## Webhook Setup
+
+### 1. Create Webhook Endpoint
+
+Set up an HTTP endpoint to receive webhook notifications:
+
+```javascript
+// Example Express.js endpoint
+app.post('/webhooks/harbor-parking', (req, res) => {
+  const event = req.body;
+  
+  // Verify webhook signature
+  if (!verifySignature(req.headers['x-harbor-signature'], req.body)) {
+    return res.status(401).send('Invalid signature');
+  }
+  
+  // Process the event
+  switch (event.type) {
+    case 'claim.created':
+      handleClaimCreated(event.data);
+      break;
+    case 'availability.created':
+      handleAvailabilityCreated(event.data);
+      break;
+    // ... handle other events
+  }
+  
+  res.status(200).send('OK');
+});
+```
+
+### 2. Register Webhook URL
+
+Contact building management to register your webhook URL:
+
+```bash
+curl -X POST "https://parking.lapscher.com/api/webhooks" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/webhooks/harbor-parking",
+    "events": ["claim.created", "availability.created"],
+    "description": "My parking app integration"
+  }'
+```
+
+## Webhook Payload
+
+All webhook payloads follow this structure:
+
+```json
+{
+  "id": "webhook_event_id",
+  "type": "claim.created",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "data": {
+    // Event-specific data
+  }
+}
+```
+
+### Example Payloads
+
+#### Claim Created
+
+```json
+{
+  "id": "webhook_123",
+  "type": "claim.created",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "data": {
+    "claim": {
+      "id": "claim_456",
+      "availability_id": "avail_789",
+      "claimer_id": "user_123",
+      "status": "confirmed",
+      "created_at": "2024-01-15T10:30:00Z"
+    },
+    "availability": {
+      "id": "avail_789",
+      "spot_id": "spot_101",
+      "start_time": "2024-01-20T09:00:00Z",
+      "end_time": "2024-01-20T18:00:00Z"
+    },
+    "claimer": {
+      "id": "user_123",
+      "full_name": "John Doe",
+      "email": "john@example.com"
+    }
+  }
+}
+```
+
+#### Availability Created
+
+```json
+{
+  "id": "webhook_124",
+  "type": "availability.created",
+  "timestamp": "2024-01-15T11:00:00Z",
+  "data": {
+    "availability": {
+      "id": "avail_790",
+      "spot_id": "spot_102",
+      "start_time": "2024-01-21T08:00:00Z",
+      "end_time": "2024-01-21T17:00:00Z",
+      "notes": "Available while at work",
+      "is_active": true
+    },
+    "spot": {
+      "id": "spot_102",
+      "spot_number": "B-15",
+      "location": "Level 1 Parking"
+    },
+    "owner": {
+      "id": "user_456",
+      "full_name": "Jane Smith",
+      "email": "jane@example.com"
+    }
+  }
+}
+```
+
+## Security
+
+### Signature Verification
+
+Webhooks include a signature header for verification:
+
+```javascript
+function verifySignature(signature, payload) {
+  const expectedSignature = crypto
+    .createHmac('sha256', process.env.WEBHOOK_SECRET)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+  
+  return signature === `sha256=${expectedSignature}`;
+}
+```
+
+### Retry Logic
+
+Webhooks are retried up to 3 times with exponential backoff if your endpoint returns an error (4xx or 5xx status code).
+
+## Best Practices
+
+1. **Idempotency**: Handle duplicate webhooks gracefully
+2. **Quick Response**: Respond within 5 seconds
+3. **Error Handling**: Log errors but don't fail the webhook
+4. **Security**: Always verify webhook signatures
+5. **Testing**: Use the webhook testing endpoint
+
+## Testing
+
+Test your webhook endpoint using the testing endpoint:
+
+```bash
+curl -X POST "https://parking.lapscher.com/api/webhooks/test" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/webhooks/harbor-parking",
+    "event_type": "claim.created"
+  }'
+```
+
+## Rate Limiting
+
+- **Webhook Delivery**: Up to 100 webhooks per minute per endpoint
+- **Retry Attempts**: Maximum 3 retries per failed delivery
+- **Payload Size**: Maximum 1MB per webhook payload
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Endpoint Unreachable**: Ensure your endpoint is publicly accessible
+2. **Invalid Response**: Return 200 status code for successful processing
+3. **Timeout**: Respond within 5 seconds
+4. **Signature Mismatch**: Verify your webhook secret is correct
+
+### Monitoring
+
+Monitor webhook delivery through the admin dashboard or by checking your endpoint logs for failed deliveries.

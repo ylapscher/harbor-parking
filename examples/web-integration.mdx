@@ -1,0 +1,738 @@
+# Web Integration
+
+This example demonstrates how to integrate the Harbor Parking API into a web application using React and TypeScript.
+
+## Overview
+
+The Harbor Parking API is designed to work seamlessly with web applications. This example shows how to build a React application that allows users to browse available parking spots, claim them, and manage their own spots.
+
+## Project Setup
+
+### 1. Initialize React Project
+
+```bash
+npx create-react-app harbor-parking-web --template typescript
+cd harbor-parking-web
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install react-router-dom axios @types/react-router-dom
+npm install @headlessui/react @heroicons/react
+npm install tailwindcss @tailwindcss/forms
+```
+
+### 3. Configure Tailwind CSS
+
+```bash
+npx tailwindcss init
+```
+
+Update `tailwind.config.js`:
+
+```javascript
+module.exports = {
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        gray: {
+          900: '#111827',
+          800: '#1f2937',
+          700: '#374151',
+          600: '#4b5563',
+          500: '#6b7280',
+          400: '#9ca3af',
+          300: '#d1d5db',
+          200: '#e5e7eb',
+          100: '#f3f4f6',
+        }
+      }
+    },
+  },
+  plugins: [
+    require('@tailwindcss/forms'),
+  ],
+}
+```
+
+### 4. API Client Setup
+
+Create an API client for the Harbor Parking API:
+
+```typescript
+// src/api/client.ts
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+
+const API_BASE_URL = 'https://parking.lapscher.com/api';
+
+interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+}
+
+interface User {
+  id: string;
+  email: string;
+  full_name?: string;
+}
+
+class HarborParkingAPI {
+  private client: AxiosInstance;
+  private tokens: AuthTokens | null = null;
+
+  constructor() {
+    this.client = axios.create({
+      baseURL: API_BASE_URL,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Load tokens from localStorage
+    this.loadTokens();
+
+    // Add request interceptor to include auth token
+    this.client.interceptors.request.use((config) => {
+      if (this.tokens?.access_token) {
+        config.headers.Authorization = `Bearer ${this.tokens.access_token}`;
+      }
+      return config;
+    });
+
+    // Add response interceptor to handle token refresh
+    this.client.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        if (error.response?.status === 401 && this.tokens?.refresh_token) {
+          try {
+            await this.refreshToken();
+            // Retry the original request
+            const originalRequest = error.config;
+            originalRequest.headers.Authorization = `Bearer ${this.tokens?.access_token}`;
+            return this.client(originalRequest);
+          } catch (refreshError) {
+            this.logout();
+            throw refreshError;
+          }
+        }
+        throw error;
+      }
+    );
+  }
+
+  private loadTokens(): void {
+    const tokens = localStorage.getItem('harbor_tokens');
+    if (tokens) {
+      this.tokens = JSON.parse(tokens);
+    }
+  }
+
+  private saveTokens(tokens: AuthTokens): void {
+    this.tokens = tokens;
+    localStorage.setItem('harbor_tokens', JSON.stringify(tokens));
+  }
+
+  private clearTokens(): void {
+    this.tokens = null;
+    localStorage.removeItem('harbor_tokens');
+    localStorage.removeItem('harbor_user');
+  }
+
+  // Authentication
+  async login(email: string, password: string): Promise<{ user: User; tokens: AuthTokens }> {
+    const response: AxiosResponse<{ user: User } & AuthTokens> = await this.client.post('/auth/login', {
+      email,
+      password,
+    });
+
+    this.saveTokens({
+      access_token: response.data.access_token,
+      refresh_token: response.data.refresh_token,
+    });
+
+    localStorage.setItem('harbor_user', JSON.stringify(response.data.user));
+
+    return {
+      user: response.data.user,
+      tokens: {
+        access_token: response.data.access_token,
+        refresh_token: response.data.refresh_token,
+      },
+    };
+  }
+
+  async logout(): Promise<void> {
+    try {
+      await this.client.post('/auth/logout');
+    } catch (error) {
+      // Ignore logout errors
+    } finally {
+      this.clearTokens();
+    }
+  }
+
+  async refreshToken(): Promise<void> {
+    if (!this.tokens?.refresh_token) {
+      throw new Error('No refresh token available');
+    }
+
+    const response: AxiosResponse<AuthTokens> = await this.client.post('/auth/refresh', {
+      refresh_token: this.tokens.refresh_token,
+    });
+
+    this.saveTokens(response.data);
+  }
+
+  // Dashboard
+  async getDashboard() {
+    const response = await this.client.get('/dashboard');
+    return response.data;
+  }
+
+  // Parking Spots
+  async getParkingSpots() {
+    const response = await this.client.get('/parking-spots');
+    return response.data;
+  }
+
+  async createParkingSpot(spotData: {
+    spot_number: string;
+    location: string;
+    notes?: string;
+  }) {
+    const response = await this.client.post('/parking-spots', spotData);
+    return response.data;
+  }
+
+  async updateParkingSpot(spotData: {
+    id: string;
+    spot_number?: string;
+    location?: string;
+    notes?: string;
+  }) {
+    const response = await this.client.put('/parking-spots', spotData);
+    return response.data;
+  }
+
+  async deleteParkingSpot(spotId: string) {
+    const response = await this.client.delete(`/parking-spots?id=${spotId}`);
+    return response.data;
+  }
+
+  // Availabilities
+  async getAvailabilities(params?: { available?: boolean }) {
+    const queryParams = params ? `?${new URLSearchParams(params).toString()}` : '';
+    const response = await this.client.get(`/availabilities${queryParams}`);
+    return response.data;
+  }
+
+  async createAvailability(availabilityData: {
+    spot_id: string;
+    start_time: string;
+    end_time: string;
+    notes?: string;
+  }) {
+    const response = await this.client.post('/availabilities', availabilityData);
+    return response.data;
+  }
+
+  async updateAvailability(availabilityData: {
+    id: string;
+    start_time?: string;
+    end_time?: string;
+    notes?: string;
+    is_active?: boolean;
+  }) {
+    const response = await this.client.put('/availabilities', availabilityData);
+    return response.data;
+  }
+
+  async deleteAvailability(availabilityId: string) {
+    const response = await this.client.delete(`/availabilities?id=${availabilityId}`);
+    return response.data;
+  }
+
+  // Claims
+  async createClaim(claimData: {
+    availability_id: string;
+    notes?: string;
+  }) {
+    const response = await this.client.post('/claims', claimData);
+    return response.data;
+  }
+
+  async getMyClaims() {
+    const response = await this.client.get('/claims');
+    return response.data;
+  }
+
+  async updateClaim(claimData: {
+    id: string;
+    status?: string;
+    notes?: string;
+  }) {
+    const response = await this.client.put('/claims', claimData);
+    return response.data;
+  }
+
+  async deleteClaim(claimId: string) {
+    const response = await this.client.delete(`/claims?id=${claimId}`);
+    return response.data;
+  }
+
+  // Profile
+  async getProfile() {
+    const response = await this.client.get('/profile');
+    return response.data;
+  }
+
+  async updateProfile(profileData: {
+    full_name?: string;
+    phone_number?: string;
+  }) {
+    const response = await this.client.put('/profile', profileData);
+    return response.data;
+  }
+
+  // Check if user is authenticated
+  isAuthenticated(): boolean {
+    return !!this.tokens?.access_token;
+  }
+
+  // Get current user
+  getCurrentUser(): User | null {
+    const user = localStorage.getItem('harbor_user');
+    return user ? JSON.parse(user) : null;
+  }
+}
+
+export const api = new HarborParkingAPI();
+```
+
+## Components Implementation
+
+### 1. Authentication Context
+
+```typescript
+// src/contexts/AuthContext.tsx
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { api } from '../api/client';
+
+interface User {
+  id: string;
+  email: string;
+  full_name?: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user is already authenticated
+    if (api.isAuthenticated()) {
+      const currentUser = api.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    try {
+      const { user } = await api.login(email, password);
+      setUser(user);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await api.logout();
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+```
+
+### 2. Login Component
+
+```typescript
+// src/components/LoginForm.tsx
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+
+export const LoginForm: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      navigate('/dashboard');
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+            Sign in to Harbor Parking
+          </h2>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-700 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-700 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {loading ? 'Signing in...' : 'Sign in'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+```
+
+### 3. Dashboard Component
+
+```typescript
+// src/components/Dashboard.tsx
+import React, { useState, useEffect } from 'react';
+import { api } from '../api/client';
+import { ParkingSpotCard } from './ParkingSpotCard';
+import { AvailableSpotsList } from './AvailableSpotsList';
+
+interface DashboardData {
+  stats: {
+    mySpots: number;
+    availableSpots: number;
+    activeClaims: number;
+    totalClaims: number;
+  };
+  mySpots: any[];
+  availableSpots: any[];
+  myClaims: any[];
+}
+
+export const Dashboard: React.FC = () => {
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadDashboard = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getDashboard();
+      setDashboardData(data);
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Failed to load dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-red-400 text-xl">{error}</div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-900">
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-gray-800 overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-400 truncate">My Spots</dt>
+                    <dd className="text-lg font-medium text-white">{dashboardData.stats.mySpots}</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800 overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-400 truncate">Available Spots</dt>
+                    <dd className="text-lg font-medium text-white">{dashboardData.stats.availableSpots}</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800 overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-400 truncate">Active Claims</dt>
+                    <dd className="text-lg font-medium text-white">{dashboardData.stats.activeClaims}</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800 overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-400 truncate">Total Claims</dt>
+                    <dd className="text-lg font-medium text-white">{dashboardData.stats.totalClaims}</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* My Spots */}
+          <div className="bg-gray-800 shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h3 className="text-lg leading-6 font-medium text-white mb-4">My Parking Spots</h3>
+              {dashboardData.mySpots.length > 0 ? (
+                <div className="space-y-4">
+                  {dashboardData.mySpots.map((spot) => (
+                    <ParkingSpotCard key={spot.id} spot={spot} onUpdate={loadDashboard} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400">No parking spots registered yet.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Available Spots */}
+          <div className="bg-gray-800 shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h3 className="text-lg leading-6 font-medium text-white mb-4">Available Spots</h3>
+              <AvailableSpotsList spots={dashboardData.availableSpots} onClaim={loadDashboard} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+## App Structure
+
+```typescript
+// src/App.tsx
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LoginForm } from './components/LoginForm';
+import { Dashboard } from './components/Dashboard';
+import { Navigation } from './components/Navigation';
+
+const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="text-white text-xl">Loading...</div>
+    </div>;
+  }
+
+  return user ? <>{children}</> : <Navigate to="/login" />;
+};
+
+const AppContent: React.FC = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginForm />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <div>
+                <Navigation />
+                <Dashboard />
+              </div>
+            </PrivateRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to="/dashboard" />} />
+      </Routes>
+    </Router>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+};
+
+export default App;
+```
+
+## Key Features
+
+1. **Authentication**: JWT token management with automatic refresh
+2. **Responsive Design**: Mobile-first design using Tailwind CSS
+3. **Real-time Updates**: Automatic data refresh after actions
+4. **Error Handling**: Comprehensive error handling and user feedback
+5. **Type Safety**: Full TypeScript support for better development experience
+
+## Best Practices
+
+1. **Token Management**: Secure token storage and automatic refresh
+2. **Error Boundaries**: Proper error handling throughout the app
+3. **Loading States**: Clear loading indicators for better UX
+4. **Component Structure**: Modular, reusable components
+5. **State Management**: Context API for global state management
+
+This example provides a solid foundation for building a web application that integrates with the Harbor Parking API. You can extend it with additional features like real-time updates, advanced filtering, and more sophisticated UI components.
