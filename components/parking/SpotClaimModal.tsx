@@ -45,14 +45,6 @@ export function SpotClaimModal({ availability, onClaim, onClose }: SpotClaimModa
     setLoading(true)
     setError('')
 
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token
-
-    if (!token) {
-      window.location.href = '/login'
-      return
-    }
-
     try {
       // Check if availability is still active and not expired
       const now = new Date()
@@ -85,7 +77,6 @@ export function SpotClaimModal({ availability, onClaim, onClose }: SpotClaimModa
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           availability_id: availability.id,

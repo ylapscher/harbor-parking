@@ -211,7 +211,15 @@ export function Dashboard() {
     setShowAvailabilityModal(true)
   }
 
-
+  const handleClaim = (availabilityId: string) => {
+    const availability = availableSpots.find(a => a.id === availabilityId)
+    if (!availability) {
+      setError('Availability not found')
+      return
+    }
+    setSelectedAvailability(availability || null)
+    setShowClaimModal(true)
+  }
 
   const handleReleaseClaim = async (claimId: string) => {
     try {
@@ -225,7 +233,6 @@ export function Dashboard() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           id: claimId,
@@ -259,9 +266,6 @@ export function Dashboard() {
 
       const response = await fetch('/api/parking-spots?id=' + encodeURIComponent(spotId), {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
       })
 
       if (!response.ok) {
@@ -314,6 +318,8 @@ export function Dashboard() {
             location: newSpotData.nearestElevator,
             description: '',
             owner_id: user.id,
+            is_active: false,
+            is_verified: profile.is_admin || false
           }
         ])
         .select()
@@ -518,12 +524,10 @@ export function Dashboard() {
                 <ParkingSpotCard
                   key={availability.id}
                   availability={availability}
-                  onClaim={() => {
-                    fetchData()
-                    setSuccess('Spot claimed successfully!')
-                    setTimeout(() => setSuccess(null), 3000)
-                    setShowClaimModal(false)
-                    setSelectedAvailability(null)
+                  disabled={!profile?.is_approved}
+                  onClaim={async (availabilityId) => {
+                    await fetchData()
+                    handleClaim(availabilityId)
                   }}
                 />
               ))}

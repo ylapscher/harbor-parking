@@ -141,7 +141,6 @@ export function AvailabilityToggle({
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             id: currentAvailability.id,
@@ -162,7 +161,6 @@ if (!response.ok) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             spot_id: spotId,
@@ -193,20 +191,12 @@ if (!response.ok) {
     if (!currentAvailability) return
     
     setLoading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token
-
-    if (!token) {
-      window.location.href = '/login'
-      return
-    }
 
     try {
       const response = await fetch('/api/availabilities', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           id: currentAvailability.id,

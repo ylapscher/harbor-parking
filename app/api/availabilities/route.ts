@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const CreateAvailabilitySchema = z.object({
   spot_id: z.string().uuid('Invalid spot ID'),
@@ -141,7 +142,8 @@ if (error) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(request)
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
@@ -176,8 +178,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const supabase = getSupabaseAdmin()
 
     // Check if user owns the parking spot
     const { data: spot } = await supabase
@@ -248,7 +248,8 @@ if (error) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(request)
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
@@ -278,8 +279,6 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const supabase = getSupabaseAdmin()
 
     // Check if availability exists and user owns the spot
     const { data: availability } = await supabase
@@ -344,7 +343,8 @@ if (error) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(request)
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
@@ -362,8 +362,6 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const supabase = getSupabaseAdmin()
 
     // Check if availability exists and user owns the spot
     const { data: availability } = await supabase

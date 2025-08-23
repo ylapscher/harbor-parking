@@ -7,12 +7,13 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 interface ParkingSpotCardProps {
   spot?: ParkingSpotWithOwner
   availability?: AvailabilityWithSpot
-  onClaim?: (availabilityId: string) => void
+  onClaim?: (availabilityId: string) => Promise<void>
   onToggleAvailability?: (spotId: string) => void
   onDeleteSpot?: (spotId: string) => void
   isOwner?: boolean
   showActions?: boolean
   loading?: boolean
+  disabled?: boolean
 }
 
 export function ParkingSpotCard({
@@ -23,7 +24,8 @@ export function ParkingSpotCard({
   onDeleteSpot,
   isOwner = false,
   showActions = true,
-  loading = false
+  loading = false,
+  disabled = false
 }: ParkingSpotCardProps) {
   const [claiming, setClaiming] = useState(false)
   const [hasConfirmedClaim, setHasConfirmedClaim] = useState(false)
@@ -215,7 +217,7 @@ export function ParkingSpotCard({
               {availability && isAvailable && !hasConfirmedClaim && (
                 <button
                   onClick={handleClaim}
-                  disabled={claiming || hasConfirmedClaim || checkingClaims}
+                  disabled={claiming || hasConfirmedClaim || checkingClaims || disabled}
                   className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                   {claiming ? 'Claiming...' : checkingClaims ? 'Checking...' : hasConfirmedClaim ? 'Claimed' : 'Claim Spot'}
