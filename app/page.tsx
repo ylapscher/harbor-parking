@@ -103,7 +103,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-bold text-white mb-4">1. Register Your Spot</h3>
               <p className="text-gray-300">
-                Add your parking spot details and specify which elevator it&apos;s nearest to
+                Add your parking spot details and specify it&apos;s location
               </p>
             </div>
 
@@ -116,7 +116,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-bold text-white mb-4">2. Set Availability</h3>
               <p className="text-gray-300">
-                Mark your spot as available when you&apos;re traveling, working from home, or out for the day
+                Mark your spot as available when you&apos;re traveling, working from the office, or out for the day
               </p>
             </div>
 
@@ -288,8 +288,22 @@ export default function Home() {
                 The smart way to share parking spots in residential buildings. 
                 Built for communities, by residents who understand the parking struggle.
               </p>
-              <div className="text-gray-400 text-sm">
-                &copy; 2024 Harbor Parking. Built with ❤️ for better communities.
+              <div className="text-gray-400 text-sm mb-4">
+                &copy; 2025 Harbor Parking. Built with ❤️ for better communities.
+              </div>
+              <div className="flex space-x-6 text-sm">
+                <a 
+                  href="/privacy-policy"
+                  className="text-gray-400 hover:text-blue-400 transition-colors"
+                >
+                  Privacy Policy
+                </a>
+                <a 
+                  href="/terms-of-service"
+                  className="text-gray-400 hover:text-blue-400 transition-colors"
+                >
+                  Terms of Service
+                </a>
               </div>
             </div>
             
