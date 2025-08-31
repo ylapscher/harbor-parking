@@ -36,7 +36,7 @@ export default function PrivacyPolicy() {
             
             <h3 className="text-xl font-bold text-white mb-4">Introduction</h3>
             <p className="text-gray-300 mb-6">
-              Harbor Parking ("we," "our," "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our SaaS application and related services.
+              Harbor Parking (&quot;we,&quot; &quot;our,&quot; &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our SaaS application and related services.
             </p>
 
             <h3 className="text-xl font-bold text-white mb-4">Information We Collect</h3>
@@ -88,7 +88,7 @@ export default function PrivacyPolicy() {
               We use cookies and similar technologies for authentication, analytics, and service optimization. You can manage cookie preferences through your browser settings.
             </p>
 
-            <h3 className="text-xl font-bold text-white mb-4">Children's Privacy</h3>
+            <h3 className="text-xl font-bold text-white mb-4">Children&apos;s Privacy</h3>
             <p className="text-gray-300 mb-6">
               Our service is not intended for users under age 13, and we do not knowingly collect data from children under this age.
             </p>

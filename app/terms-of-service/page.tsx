@@ -36,7 +36,7 @@ export default function TermsOfService() {
             
             <h3 className="text-xl font-bold text-white mb-4">Introduction</h3>
             <p className="text-gray-300 mb-6">
-              Welcome to <strong>Harbor Parking</strong> ("Service," "we," "us," or "our"). These Terms of Service ("Terms") govern access and use of the Harbor Parking mobile and web application for resident coordination of guest parking in multi-unit buildings. Use of the Service constitutes acceptance of these Terms.
+              Welcome to <strong>Harbor Parking</strong> (&quot;Service,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). These Terms of Service (&quot;Terms&quot;) govern access and use of the Harbor Parking mobile and web application for resident coordination of guest parking in multi-unit buildings. Use of the Service constitutes acceptance of these Terms.
             </p>
 
             <h3 className="text-xl font-bold text-white mb-4">Account Registration</h3>
@@ -83,7 +83,7 @@ export default function TermsOfService() {
 
             <h3 className="text-xl font-bold text-white mb-4">Limitation of Liability</h3>
             <p className="text-gray-300 mb-6">
-              Harbor Parking is provided "as is." No liability is assumed for parking availability, disputes, property loss/damage, or missed notifications. Your sole remedy for dissatisfaction is discontinuing Service use.
+              Harbor Parking is provided &quot;as is.&quot; No liability is assumed for parking availability, disputes, property loss/damage, or missed notifications. Your sole remedy for dissatisfaction is discontinuing Service use.
             </p>
 
             <h3 className="text-xl font-bold text-white mb-4">Privacy and Communications</h3>
