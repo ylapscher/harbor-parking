@@ -1,7 +1,7 @@
 ## **Business Requirements Document (BRD)**  
 **Project Name:** Resident Parking Spot Sharing Platform  
 **Version:** 2.0  
-**Prepared By:** [Your Name]  
+**Prepared By:** Yoel Lapscher
 **Date:** August 1, 2025
 
 ## **1. Executive Summary**  
